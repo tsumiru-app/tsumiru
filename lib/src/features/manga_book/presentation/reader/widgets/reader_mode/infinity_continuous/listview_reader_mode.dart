@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:zoom_view/zoom_view.dart';
 
 import '../../../../../../../utils/extensions/custom_extensions.dart';
 import '../../../../../../../widgets/server_image.dart';
@@ -720,8 +721,10 @@ class _VisibilityReporterState extends State<_VisibilityReporter> {
   }
 }
 
-/// Wraps a ListView in a pinch-to-zoom view. Stays on its own so the
-/// reader build method doesn't accumulate platform conditional logic.
+/// Wraps a ListView in a ZoomView for pinch-to-zoom. ZoomView accepts
+/// any ScrollController, so the plain ListView's controller drops in
+/// without the ScrollOffsetToScrollController adapter the SPL version
+/// needed.
 class _ListViewWithPinch extends StatelessWidget {
   const _ListViewWithPinch({
     required this.scrollController,
@@ -735,12 +738,14 @@ class _ListViewWithPinch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // For the experimental migration we skip pinch-to-zoom — the
-    // ZoomView wrapper used by the SPL implementation requires a
-    // ScrollOffsetController which doesn't exist for a plain
-    // ListView. Reader still works, just no pinch. Will restore in a
-    // follow-up once the scroll bug is confirmed gone.
-    return child;
+    return ZoomView(
+      controller: scrollController,
+      scrollAxis: scrollDirection,
+      maxScale: InfinityContinuousConfig.maxZoomScale,
+      doubleTapDrag: true,
+      forceHoldOnPointerDown: true,
+      child: child,
+    );
   }
 }
 
