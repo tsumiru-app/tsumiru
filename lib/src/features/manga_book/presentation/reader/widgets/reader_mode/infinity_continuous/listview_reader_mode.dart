@@ -375,12 +375,27 @@ class ListViewReaderMode extends HookConsumerWidget {
       );
     }
 
-    // Slider debounce — the Slider fires onChanged continuously during
-    // a drag; without debounce we'd issue dozens of overlapping scrolls.
-    // We keep state updates immediate (so the slider's page-number text
-    // tracks the drag) but defer the actual scroll until the user
-    // pauses.
-    final pendingSliderTimer = useRef<Timer?>(null);
+    // Estimate the pixel offset for a page index by averaging the
+    // measured heights of currently-visible pages, falling back to the
+    // placeholder height ratio when nothing is laid out yet.
+    double estimateOffsetForGlobalIndex(int globalIndex) {
+      final viewportHeight = MediaQuery.of(context).size.height;
+      double avgPageHeight =
+          viewportHeight * InfinityContinuousConfig.verticalPageHeightRatio;
+      if (pageRects.value.isNotEmpty) {
+        double sum = 0;
+        int n = 0;
+        for (final r in pageRects.value.values) {
+          final h = r.bottom - r.top;
+          if (h > 0) {
+            sum += h;
+            n++;
+          }
+        }
+        if (n > 0) avgPageHeight = sum / n;
+      }
+      return globalIndex * avgPageHeight;
+    }
 
     void scrollToGlobalIndex(int globalIndex,
         {bool animate = true, String? source}) {
@@ -395,7 +410,7 @@ class ListViewReaderMode extends HookConsumerWidget {
           ? const Duration(milliseconds: 300)
           : Duration.zero;
 
-      // Fast path: target is already built — ensureVisible works.
+      // Fast path: target widget already built — ensureVisible is exact.
       if (ctx != null) {
         ReaderDebugLog.log('jump_direct', {
           'source': source ?? 'unknown',
@@ -412,35 +427,16 @@ class ListViewReaderMode extends HookConsumerWidget {
         return;
       }
 
-      // Slow path: target's widget hasn't been built yet (outside the
-      // ListView cache window). Estimate the pixel offset and jumpTo,
-      // then refine via ensureVisible once the widget has laid out.
-      final viewportHeight = MediaQuery.of(context).size.height;
-      double avgPageHeight =
-          viewportHeight * InfinityContinuousConfig.verticalPageHeightRatio;
-      if (pageRects.value.isNotEmpty) {
-        double sum = 0;
-        int n = 0;
-        for (final r in pageRects.value.values) {
-          final h = r.bottom - r.top;
-          if (h > 0) {
-            sum += h;
-            n++;
-          }
-        }
-        if (n > 0) avgPageHeight = sum / n;
-      }
+      // Slow path: target outside cache window. JumpTo estimated offset
+      // then refine once the widget builds.
       final position = scrollController.position;
-      final estimated = (globalIndex * avgPageHeight).clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
-      );
+      final estimated = estimateOffsetForGlobalIndex(globalIndex)
+          .clamp(position.minScrollExtent, position.maxScrollExtent);
       ReaderDebugLog.log('jump_estimated', {
         'source': source ?? 'unknown',
         'global_idx': globalIndex,
         'chapter_id': loc.chapterId,
         'page_idx': loc.pageIdx,
-        'avg_page_h': avgPageHeight.toStringAsFixed(1),
         'estimated_offset': estimated.round(),
         'max_extent': position.maxScrollExtent.round(),
       });
@@ -462,6 +458,20 @@ class ListViewReaderMode extends HookConsumerWidget {
       });
     }
 
+    // Slider drag handling.
+    //
+    // The Slider fires onChanged on every drag-tick. We want:
+    //   - State (currentChapterPageIndex) updates immediately so the
+    //     thumb tracks the user's finger.
+    //   - Scroll position jumps live to the estimated offset, no
+    //     animation, no ensureVisible — animating each tick or
+    //     ensureVisible-ing through the post-frame produces stutter as
+    //     consecutive animations collide.
+    //   - When the user stops dragging (no tick for ~120ms), do one
+    //     final exact ensureVisible against the target's GlobalKey to
+    //     land on the precise page rather than the estimate.
+    final sliderRefineTimer = useRef<Timer?>(null);
+
     void jumpToChapterRelative(int chapterIdx) {
       final globalIndex =
           InfinityContinuousUtils.convertChapterIndexToGlobalIndex(
@@ -471,18 +481,42 @@ class ListViewReaderMode extends HookConsumerWidget {
       );
       if (globalIndex < 0) return;
 
-      // Immediate state update so the slider's page-number text
-      // follows the user's drag.
+      // Update slider-bound state. Required for the thumb to follow
+      // the drag — Slider is controlled.
       if (currentChapterPageIndex.value != chapterIdx) {
         currentChapterPageIndex.value = chapterIdx;
       }
       currentIndex.value = globalIndex;
 
-      pendingSliderTimer.value?.cancel();
-      pendingSliderTimer.value =
-          Timer(const Duration(milliseconds: 80), () {
-        scrollToGlobalIndex(globalIndex,
-            animate: isAnimationEnabled, source: 'slider');
+      // Live scroll: cheap pixel jumpTo, no animation. Lets the reader
+      // track the drag in real time.
+      if (scrollController.hasClients) {
+        final position = scrollController.position;
+        final estimated = estimateOffsetForGlobalIndex(globalIndex)
+            .clamp(position.minScrollExtent, position.maxScrollExtent);
+        scrollController.jumpTo(estimated);
+      }
+
+      // Refine to the exact target ~120ms after the user stops moving.
+      sliderRefineTimer.value?.cancel();
+      sliderRefineTimer.value =
+          Timer(const Duration(milliseconds: 120), () {
+        if (!scrollController.hasClients) return;
+        final loc = _locateGlobalIndex(globalIndex, loadedChapters.value);
+        if (loc == null) return;
+        final keyId = _pageKeyId(loc.chapterId, loc.pageIdx);
+        final ctx = pageKeys.value[keyId]?.currentContext;
+        if (ctx == null) return;
+        Scrollable.ensureVisible(
+          ctx,
+          alignment: 0.0,
+          duration: Duration.zero,
+        );
+        ReaderDebugLog.log('slider_refined', {
+          'global_idx': globalIndex,
+          'chapter_idx': chapterIdx,
+          'visible_ch': currentVisibleChapter.value.id,
+        });
       });
     }
 
