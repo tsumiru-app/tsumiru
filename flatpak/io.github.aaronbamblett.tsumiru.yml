@@ -25,6 +25,8 @@ modules:
       # App bundle → /app/tsumiru, with the binary linked onto PATH.
       - mkdir -p /app/tsumiru
       - cp -r bundle/* /app/tsumiru/
+      # GitHub artifacts drop the executable bit on the round-trip, so restore it.
+      - chmod +x /app/tsumiru/tsumiru
       - mkdir -p /app/bin
       - ln -s /app/tsumiru/tsumiru /app/bin/tsumiru
       # Desktop integration metadata.
