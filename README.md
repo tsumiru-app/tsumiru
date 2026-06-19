@@ -1,5 +1,5 @@
 <p align="center">
- <img width=120px height=120px src="assets/icons/launcher/sorayomi_icon.png" alt="Tsumiru logo"/>
+ <img width=120px height=120px src="assets/icons/launcher/tsumiru_icon.png" alt="Tsumiru logo"/>
 </p>
 
 <h1 align="center">Tsumiru</h1>
@@ -35,15 +35,10 @@ Runs on **Android, Linux, Windows, macOS, and Web**.
 
 This fork focuses on making it a great daily driver, especially for **webtoon / manhwa** reading:
 
-- **Rebuilt webtoon reader** — seamless multi-chapter continuous scroll, with the
-  backward-scroll "snap" fixed (pages reserve their measured height so a strip never
-  collapses and yanks you backward).
-- **Pinch-to-zoom that scrolls while zoomed.**
-- **Authentication** — `simple_login` + `ui_login`, secure-storage credentials,
-  proactive token refresh, authenticated GraphQL WebSocket subscriptions.
-- **Library** — sort by last read, Last Chapter Date & Total Chapters sorts,
-  Started/Bookmarked filters, a fixed tri-state filter, and a bulk-download presets menu.
-- **UI fixes** — proper insets above the Android navigation bar, download-tile overflow fix.
+- **Rebuilt webtoon reader** — smooth, seamless multi-chapter continuous scrolling, tuned for long manhwa strips.
+- **Pinch-to-zoom** that keeps working while you scroll, including in the continuous reader.
+- **Authentication** — `simple_login` and `ui_login`, with credentials kept in your device's secure storage.
+- **Flexible library** — sort by last read, last chapter date, or total chapters; filter by reading status and bookmarks; and queue chapters fast with bulk-download presets.
 
 ## Download
 

@@ -53,3 +53,6 @@ app.*.map.json
 *.graphql.dart
 **/__generated__
 lib/src/l10n/generated
+
+# Design exploration scratch — canonical masters live in design/brand/
+design/icon-concepts/
