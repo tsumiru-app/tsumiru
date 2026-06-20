@@ -42,8 +42,8 @@ import '../../../widgets/chapter_actions/single_chapter_action_icon.dart';
 import '../../manga_details/controller/manga_details_controller.dart';
 import '../controller/reader_controller.dart';
 import '../utils/last_page_swipe_utils.dart';
+import 'brand_page_seekbar.dart';
 import 'directional_swipe_gesture_handler.dart';
-import 'page_number_slider.dart';
 import 'reader_navigation_layout/reader_navigation_layout.dart';
 
 class ReaderWrapper extends HookConsumerWidget {
@@ -455,13 +455,23 @@ class ReaderWrapper extends HookConsumerWidget {
                           ),
                         ),
                         Expanded(
-                          child: PageNumberSlider(
-                            currentValue: currentIndex,
-                            maxValue: totalPageCount ??
-                                chapterPages.chapter.pageCount,
-                            onChanged: (index) => onChanged(index),
-                            inverted: invertTap,
-                          ),
+                          // Horizontal (manga) → gradient seek bar inline.
+                          // Vertical (webtoon) → just the page count here; the
+                          // seek bar floats vertically on the side (below).
+                          child: scrollDirection == Axis.horizontal
+                              ? BrandPageSeekBar(
+                                  currentValue: currentIndex,
+                                  maxValue: totalPageCount ??
+                                      chapterPages.chapter.pageCount,
+                                  onChanged: (index) => onChanged(index),
+                                  inverted: invertTap,
+                                )
+                              : Center(
+                                  child: Text(
+                                    "${currentIndex + 1}"
+                                    " / ${totalPageCount ?? chapterPages.chapter.pageCount}",
+                                  ),
+                                ),
                         ),
                         Card(
                           shape: const CircleBorder(),
@@ -523,7 +533,10 @@ class ReaderWrapper extends HookConsumerWidget {
                 ),
               )
             : null,
-        body: Shortcuts.manager(
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Shortcuts.manager(
           manager: readerShortcutManager(scrollDirection),
           child: Actions(
             actions: {
@@ -600,6 +613,25 @@ class ReaderWrapper extends HookConsumerWidget {
               ),
             ),
           ),
+              ),
+            ),
+            // Webtoon / vertical scroll: the seek bar floats vertically on the
+            // side (the bottom bar shows only the page count in this mode).
+            if (scrollDirection == Axis.vertical && visibility.value)
+              Positioned(
+                right: 6,
+                top: 88,
+                bottom: 96,
+                width: 56,
+                child: BrandPageSeekBar(
+                  currentValue: currentIndex,
+                  maxValue:
+                      totalPageCount ?? chapterPages.chapter.pageCount,
+                  onChanged: (index) => onChanged(index),
+                  axis: Axis.vertical,
+                ),
+              ),
+          ],
         ),
       ),
     );
