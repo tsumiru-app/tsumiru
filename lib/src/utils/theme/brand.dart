@@ -34,6 +34,31 @@ const Color onBrandGradient = Color(0xFF0B0D1A);
 Color brandBrightAccent(ColorScheme cs) =>
     Color.lerp(cs.primary, Colors.white, 0.22)!;
 
+/// Deterministic hue (0-360) for a label — same genre always gets the same
+/// color. Mirrors the playground's `hueFor`: h = (h*31 + codeUnit) % 360.
+double brandHueFor(String label) {
+  var h = 0;
+  for (final c in label.codeUnits) {
+    h = (h * 31 + c) % 360;
+  }
+  return h.toDouble();
+}
+
+/// An icon painted with the brand gradient (for the downloaded check-circle,
+/// etc.). Single source — do not inline ShaderMask + gradient at call sites.
+Widget brandGradientIcon(
+  BuildContext context,
+  IconData icon, {
+  double size = 24,
+}) {
+  final cs = Theme.of(context).colorScheme;
+  return ShaderMask(
+    blendMode: BlendMode.srcIn,
+    shaderCallback: (bounds) => brandGradient(cs).createShader(bounds),
+    child: Icon(icon, size: size, color: Colors.white),
+  );
+}
+
 Widget _brandRow({
   required Widget label,
   Widget? icon,
@@ -160,6 +185,34 @@ class BrandGlassButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Genre / tag chip — glass fill tinted with a UNIQUE per-label color
+/// (hue derived from the label, so every genre is visually distinct).
+class BrandChip extends StatelessWidget {
+  const BrandChip({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final hue = brandHueFor(label);
+    final bg = HSLColor.fromAHSL(0.16, hue, 0.70, 0.55).toColor();
+    final border = HSLColor.fromAHSL(0.45, hue, 0.70, 0.60).toColor();
+    final fg = HSLColor.fromAHSL(1, hue, 0.85, 0.78).toColor();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: border),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 12),
       ),
     );
   }
