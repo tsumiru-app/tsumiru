@@ -632,8 +632,8 @@ class ReaderWrapper extends HookConsumerWidget {
               Positioned(
                 right: 6,
                 top: 80,
-                // Clear the bottom controls so they never overlap the bar.
-                bottom: 150,
+                // Extend down to just above the bottom menu.
+                bottom: 100,
                 width: 66,
                 child: Column(
                   children: [

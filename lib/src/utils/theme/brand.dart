@@ -190,8 +190,9 @@ class BrandGlassButton extends StatelessWidget {
   }
 }
 
-/// Small circular brand-gradient button — gradient fill + glow + dark glyph.
-/// Single source for round brand actions (reader chapter-end jumps, etc.).
+/// Small circular **glass** brand button — translucent fill + accent border +
+/// bright accent glyph. Single source for round brand actions (reader
+/// chapter-end jumps, etc.).
 class BrandCircleButton extends StatelessWidget {
   const BrandCircleButton({
     super.key,
@@ -210,8 +211,8 @@ class BrandCircleButton extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: brandGradient(cs),
-        boxShadow: brandGlow(cs),
+        color: Colors.white.withValues(alpha: 0.06),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Material(
         color: Colors.transparent,
@@ -222,7 +223,7 @@ class BrandCircleButton extends StatelessWidget {
           child: SizedBox(
             width: size,
             height: size,
-            child: Icon(icon, size: size * 0.52, color: onBrandGradient),
+            child: Icon(icon, size: size * 0.55, color: brandBrightAccent(cs)),
           ),
         ),
       ),
