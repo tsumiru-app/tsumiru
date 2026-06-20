@@ -63,6 +63,62 @@ class GradientButton extends StatelessWidget {
   }
 }
 
+/// Brand gradient FAB (indigo→cyan + glow) — use instead of stock
+/// FloatingActionButton.extended for a consistent, non-flat FAB everywhere.
+class GradientFab extends StatelessWidget {
+  const GradientFab({
+    super.key,
+    required this.onPressed,
+    required this.label,
+    this.icon,
+  });
+
+  final VoidCallback? onPressed;
+  final Widget label;
+  final Widget? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: brandGradient(cs),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: brandGlow(cs, opacity: 0.5, blur: 24),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  IconTheme.merge(
+                    data: const IconThemeData(color: Colors.white),
+                    child: icon!,
+                  ),
+                  const SizedBox(width: 9),
+                ],
+                DefaultTextStyle.merge(
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  child: label,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Secondary action pill — translucent glass fill + accent-reactive border.
 class GlassButton extends StatelessWidget {
   const GlassButton({
