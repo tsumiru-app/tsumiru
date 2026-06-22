@@ -18,8 +18,8 @@ on:
 
 env:
   pkg_name: tsumiru
-  # Pinned to the project's toolchain — newer Flutter breaks the Dart 3.8 deps.
-  flutter_version: "3.32.4"
+  # Pinned to the project's toolchain (Flutter 3.35.7 / Dart 3.9.2).
+  flutter_version: "3.35.7"
 
 jobs:
   build:
