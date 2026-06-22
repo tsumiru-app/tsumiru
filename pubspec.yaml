@@ -75,14 +75,16 @@ dev_dependencies:
   build_runner: ^2.4.14
   # flutter_flavorizr: ^2.1.5
   drift_dev: ^2.20.0
-  flutter_gen_runner: ^5.1.0+1
   flutter_launcher_icons: ^0.14.1
   flutter_lints: ^5.0.0
   flutter_native_splash: ^2.2.14
   flutter_test:
     sdk: flutter
   freezed: ^2.2.1
-  go_router_builder: ^2.0.0
+  # Pinned to the 2.7.x line: 2.8.0+ targets go_router 15 (adds TypedGoRoute
+  # .caseSensitive), but go_router itself is held at ^14 here — the go_router 15→17
+  # major bump is a separate, deliberate migration. Keep builder + runtime aligned.
+  go_router_builder: ">=2.7.5 <2.8.0"
   graphql_codegen: ^1.1.1
   json_serializable: ^6.5.4
   lints: ^5.0.0
@@ -96,9 +98,11 @@ flutter:
     - assets/icons/
     - assets/icons/launcher/
 
-flutter_gen:
-  output: lib/src/constants/gen/
-
+# flutter_gen removed from the build pipeline: flutter_gen_runner's build.yaml is
+# incompatible with build_runner_core 9.x (Flutter 3.35 / Dart 3.9). Its output,
+# lib/src/constants/gen/assets.gen.dart, is committed and treated as source; the
+# asset set (static icons) changes rarely. Regenerate manually with a one-off
+# flutter_gen_runner add if assets ever change.
 flutter_native_splash:
   color: "#0b0d1a"
   image: assets/icons/dark_icon.png
