@@ -13,6 +13,7 @@ import '../../../../routes/router_config.dart';
 import '../../../../utils/extensions/custom_extensions.dart';
 import '../../../../utils/launch_url_in_web.dart';
 import '../../../../utils/misc/toast/toast.dart';
+import '../incognito/incognito_mode.dart';
 import '../server/widget/client/server_url_tile/server_url_tile.dart';
 
 class MoreScreen extends ConsumerWidget {
@@ -32,6 +33,14 @@ class MoreScreen extends ConsumerWidget {
           ),
           const Divider(),
           const ServerUrlTile(),
+          SwitchListTile(
+            secondary: const Icon(Icons.no_accounts_rounded),
+            title: Text(context.l10n.incognitoMode),
+            subtitle: Text(context.l10n.incognitoModeDescription),
+            value: ref.watch(incognitoModeProvider),
+            onChanged: (value) =>
+                ref.read(incognitoModeProvider.notifier).set(value),
+          ),
           ListTile(
             title: Text(context.l10n.categories),
             leading: const Icon(Icons.label_rounded),
