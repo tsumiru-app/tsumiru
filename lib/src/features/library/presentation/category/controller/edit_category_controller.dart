@@ -56,6 +56,26 @@ class CategoryController extends _$CategoryController {
     ref.invalidateSelf();
     return response;
   }
+
+  /// Hide/show a category from the Library tabs. Stored as a server-side
+  /// category meta flag so it persists and syncs across devices.
+  Future<AsyncValue<void>> setHidden(int categoryId, bool hidden) async {
+    final repo = ref.read(categoryRepositoryProvider);
+    final response = await AsyncValue.guard(
+      () => hidden
+          ? repo.setCategoryMeta(
+              categoryId: categoryId,
+              key: kCategoryHiddenMetaKey,
+              value: 'true',
+            )
+          : repo.deleteCategoryMeta(
+              categoryId: categoryId,
+              key: kCategoryHiddenMetaKey,
+            ),
+    );
+    ref.invalidateSelf();
+    return response;
+  }
 }
 
 @riverpod
@@ -75,4 +95,14 @@ AsyncValue<List<CategoryDto>?> nonZeroCategoryList(Ref ref) {
   return categoryList.copyWithData((_) => categoryList.valueOrNull
       ?.where((element) => element.mangas.totalCount > 0)
       .toList());
+}
+
+/// Categories shown as tabs on the Library screen: non-empty AND not hidden.
+/// The edit screen keeps using the full [categoryControllerProvider] so hidden
+/// categories stay listed there (struck-through) and can be unhidden.
+@riverpod
+AsyncValue<List<CategoryDto>?> visibleCategoryList(Ref ref) {
+  final categoryList = ref.watch(nonZeroCategoryListProvider);
+  return categoryList.copyWithData((_) =>
+      categoryList.valueOrNull?.where((element) => !element.isHidden).toList());
 }

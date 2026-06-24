@@ -15,6 +15,7 @@ import '../../../../constants/enum.dart';
 import '../../../../utils/extensions/custom_extensions.dart';
 import '../../../history/presentation/history_controller.dart';
 import '../../../offline/data/offline_download_providers.dart';
+import '../../../settings/presentation/incognito/incognito_mode.dart';
 import '../../../settings/presentation/reader/widgets/reader_ignore_safe_area_tile/reader_ignore_safe_area_tile.dart';
 import '../../../settings/presentation/reader/widgets/reader_mode_tile/reader_mode_tile.dart';
 import '../../domain/manga/manga_model.dart';
@@ -49,6 +50,10 @@ class ReaderScreen extends HookConsumerWidget {
     final latestPage = useRef<int>(-1);
 
     final updateLastRead = useCallback((int currentPage) async {
+      // Incognito: leave no trace. Skip every progress/history write (covers
+      // both the debounced call and the PopScope flush). The PopScope's own
+      // provider invalidations still run — they're outside this callback.
+      if (ref.read(incognitoModeProvider)) return;
       final chapterValue = chapter.valueOrNull;
       final chapterPagesValue = chapterPages.valueOrNull;
       if (chapterValue == null || chapterPagesValue == null) return;
@@ -75,6 +80,8 @@ class ReaderScreen extends HookConsumerWidget {
 
     final onPageChanged = useCallback<AsyncValueSetter<int>>(
       (int index) async {
+        // Incognito: don't track progress (also avoids needless debounce churn).
+        if (ref.read(incognitoModeProvider)) return;
         final chapterValue = chapter.valueOrNull;
         final chapterPagesValue = chapterPages.valueOrNull;
         if (chapterValue == null || chapterPagesValue == null) return;

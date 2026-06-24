@@ -46,6 +46,18 @@ mutation UpdateCategoryOrder($input: UpdateCategoryOrderInput!) {
   }
 }
 
+mutation SetCategoryMeta($input: SetCategoryMetaInput!) {
+  setCategoryMeta(input: $input) {
+    __typename
+  }
+}
+
+mutation DeleteCategoryMeta($input: DeleteCategoryMetaInput!) {
+  deleteCategoryMeta(input: $input) {
+    __typename
+  }
+}
+
 query GetCategoryMangas($id: Int!) {
   category(id: $id) {
     id

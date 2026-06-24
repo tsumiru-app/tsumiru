@@ -16,6 +16,7 @@ import '../../features/about/presentation/about/widget/app_update_dialog.dart';
 import '../../utils/extensions/custom_extensions.dart';
 import '../../utils/misc/toast/toast.dart';
 import 'big_screen_navigation_bar.dart';
+import 'incognito_banner.dart';
 import 'small_screen_navigation_bar.dart';
 
 class NavigationShellScreen extends HookConsumerWidget {
@@ -108,14 +109,26 @@ class NavigationShellScreen extends HookConsumerWidget {
                   initialLocation: index == child.currentIndex,
                 ),
               ),
-              Expanded(child: child),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(child: child),
+                    const IncognitoBanner(),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       );
     } else {
       return Scaffold(
-        body: child,
+        body: Column(
+          children: [
+            Expanded(child: child),
+            const IncognitoBanner(),
+          ],
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         bottomNavigationBar: SmallScreenNavigationBar(
           selectedIndex: getReverseAdjustedIndex(child.currentIndex),

@@ -76,6 +76,40 @@ class CategoryRepository {
         ),
       );
 
+  Future<void> setCategoryMeta({
+    required int categoryId,
+    required String key,
+    required String value,
+  }) =>
+      ferryClient.mutate$SetCategoryMeta(
+        Options$Mutation$SetCategoryMeta(
+          variables: Variables$Mutation$SetCategoryMeta(
+            input: Input$SetCategoryMetaInput(
+              meta: Input$CategoryMetaTypeInput(
+                categoryId: categoryId,
+                key: key,
+                value: value,
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Future<void> deleteCategoryMeta({
+    required int categoryId,
+    required String key,
+  }) =>
+      ferryClient.mutate$DeleteCategoryMeta(
+        Options$Mutation$DeleteCategoryMeta(
+          variables: Variables$Mutation$DeleteCategoryMeta(
+            input: Input$DeleteCategoryMetaInput(
+              categoryId: categoryId,
+              key: key,
+            ),
+          ),
+        ),
+      );
+
   //  Manga
   Future<List<MangaDto>?> getMangasFromCategory({
     required int categoryId,
