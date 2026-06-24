@@ -51,18 +51,38 @@ class EditCategoryScreen extends HookConsumerWidget {
             );
           } else {
             return RefreshIndicator(
-              child: ListView.builder(
+              onRefresh: () => ref.refresh(categoryControllerProvider.future),
+              child: ReorderableListView.builder(
+                // Custom drag handles live in CategoryTile (and the default
+                // category has none), so suppress the built-in trailing ones.
+                buildDefaultDragHandles: false,
                 itemCount: data!.length,
                 itemBuilder: (context, index) {
                   final category = data[index];
                   return CategoryTile(
                     key: ValueKey(category.id),
-                    maxOrderIndex: data.length,
+                    index: index,
                     category: category,
                   );
                 },
+                onReorder: (oldIndex, newIndex) {
+                  if (newIndex > oldIndex) newIndex -= 1;
+                  // The pinned "Default" category sits at order 0: it can't be
+                  // moved, and nothing else may take slot 0.
+                  if (oldIndex == 0) return;
+                  if (newIndex < 1) newIndex = 1;
+                  if (newIndex == oldIndex) return;
+                  final moved = data[oldIndex];
+                  // reorderCategory takes the server `order` value, not the raw
+                  // list index — use the order of whatever currently occupies
+                  // the drop slot.
+                  final targetOrder =
+                      data[newIndex].order.getValueOnNullOrNegative();
+                  ref
+                      .read(categoryControllerProvider.notifier)
+                      .reorderCategory(moved.id, targetOrder);
+                },
               ),
-              onRefresh: () => ref.refresh(categoryControllerProvider.future),
             );
           }
         },
