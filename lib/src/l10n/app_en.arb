@@ -235,7 +235,10 @@
         "description": "Text to show the currently reading chapter in Reader Screen"
     },
     "@daysAgo": {
-        "description": "Days ago text to show the release date of manga"
+        "description": "Days ago text to show the release date of manga",
+        "placeholders": {
+            "days": { "type": "int" }
+        }
     },
     "@debugLogs": {
         "description": "Switch title for Debug logs in settings"
@@ -1200,10 +1203,12 @@
     "onboardingDoneTitle": "You're all set",
     "onboardingDoneSubtitle": "Browse sources to start adding manga to your library.",
     "current": "Current",
-    "daysAgo": "{days} days ago",
+    "daysAgo": "{days, plural, =1{1 day ago} other{{days} days ago}}",
     "justNow": "Just now",
-    "minutesAgo": "{minutes} minutes ago",
-    "hoursAgo": "{hours} hours ago",
+    "minutesAgo": "{minutes, plural, =1{1 minute ago} other{{minutes} minutes ago}}",
+    "@minutesAgo": { "placeholders": { "minutes": { "type": "int" } } },
+    "hoursAgo": "{hours, plural, =1{1 hour ago} other{{hours} hours ago}}",
+    "@hoursAgo": { "placeholders": { "hours": { "type": "int" } } },
     "libraryLastUpdated": "Library last updated: {time}",
     "debugLogs": "Debug logs",
     "defaultCategory": "Default category when adding new manga to library",
