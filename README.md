@@ -6,9 +6,9 @@
 
 <div align="center">
 
-[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS%20%7C%20Web-lightgrey)](https://github.com/aaronbamblett/tsumiru/releases)
+[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS%20%7C%20Web-lightgrey)](https://github.com/tsumiru-app/tsumiru/releases)
 [![License: MPL-2.0](https://img.shields.io/badge/license-MPL--2.0-blue)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/aaronbamblett/tsumiru?label=download)](https://github.com/aaronbamblett/tsumiru/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/tsumiru-app/tsumiru?label=download)](https://github.com/tsumiru-app/tsumiru/releases/latest)
 
 </div>
 
@@ -35,15 +35,18 @@ Runs on **Android, Linux, Windows, macOS, and Web**.
 
 This fork focuses on making it a great daily driver, especially for **webtoon / manhwa** reading:
 
-- **Rebuilt webtoon reader** — smooth, seamless multi-chapter continuous scrolling, tuned for long manhwa strips.
-- **Pinch-to-zoom** that keeps working while you scroll, including in the continuous reader.
-- **Authentication** — `simple_login` and `ui_login`, with credentials kept in your device's secure storage.
-- **Flexible library** — sort by last read, last chapter date, or total chapters; filter by reading status and bookmarks; and queue chapters fast with bulk-download presets.
+- **Offline reading:** download chapters to your device and read them with no connection to your server. Tsumiru keeps an on-device catalog with auto-keep rules and falls back to local copies automatically when the server isn't reachable.
+- **Rebuilt webtoon reader:** multi-chapter continuous scrolling tuned for long manhwa strips, with pinch-to-zoom that keeps working while you scroll.
+- **First-run onboarding:** a guided setup that finds your Suwayomi server on the network and walks you through connecting it.
+- **Incognito mode:** pause reading history while you catch up, plus hideable library categories (Komikku parity).
+- **13 curated themes:** hand-tuned palettes, a custom accent colour, and an AMOLED mode.
+- **Native authentication:** `simple_login` and `ui_login`, with credentials kept in your device's secure storage.
+- **Flexible library:** sort by last read, last chapter date, or total chapters; filter by reading status and bookmarks; and queue chapters fast with bulk-download presets.
 
 ## Download
 
 Grab the latest build for your platform from the
-[**Releases**](https://github.com/aaronbamblett/tsumiru/releases/latest) page
+[**Releases**](https://github.com/tsumiru-app/tsumiru/releases/latest) page
 (Android APKs — universal + per-ABI — plus Linux, Windows, macOS, and Web).
 
 **Android, with auto-updates:** add this repo to
@@ -57,7 +60,7 @@ that Tsumiru can reach. On first launch, point it at your server's address.
 
 ## Building
 
-Flutter 3.32.4 / Dart 3.8.1 (pinned).
+Flutter 3.35.7 / Dart 3.9.2 (pinned).
 
 ```bash
 flutter pub get
