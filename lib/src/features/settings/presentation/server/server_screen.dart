@@ -41,7 +41,7 @@ class ServerScreen extends ConsumerWidget {
                       ?.copyWith(color: Colors.grey),
                 ),
               ),
-              if (serverSettings.isLoading)
+              if (serverSettings.isLoading && !serverSettings.hasValue)
                 const Padding(
                   padding: EdgeInsets.all(24),
                   child: Center(child: CircularProgressIndicator()),
