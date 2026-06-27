@@ -29,6 +29,7 @@ String _deleteWhileReadingLabel(BuildContext context, int value) =>
 List<Widget> _deleteSection(
   BuildContext context, {
   required String title,
+  required String description,
   required DeleteChaptersSettings settings,
   required Future<void> Function(bool) onManual,
   required void Function(int) onWhileReading,
@@ -36,6 +37,14 @@ List<Widget> _deleteSection(
 }) =>
     [
       SectionTitle(title: title),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Text(
+          description,
+          style: context.textTheme.bodySmall
+              ?.copyWith(color: context.theme.hintColor),
+        ),
+      ),
       SettingsPropTile(
         title: context.l10n.deleteChapterAfterManuallyMarkedRead,
         type: SettingsPropType.switchTile(
@@ -128,6 +137,7 @@ class DownloadsSettingsScreen extends ConsumerWidget {
                   ..._deleteSection(
                     context,
                     title: context.l10n.deleteOnDeviceDownloads,
+                    description: context.l10n.deleteOnDeviceDownloadsDescription,
                     settings: localDelete,
                     onManual: (v) async => ref
                         .read(localDeleteManuallyMarkedReadProvider.notifier)
@@ -143,6 +153,7 @@ class DownloadsSettingsScreen extends ConsumerWidget {
                   ..._deleteSection(
                     context,
                     title: context.l10n.deleteServerDownloads,
+                    description: context.l10n.deleteServerDownloadsDescription,
                     settings: serverDelete,
                     onManual: serverDeleteController.setDeleteManuallyMarkedRead,
                     onWhileReading: serverDeleteController.setDeleteWhileReading,
