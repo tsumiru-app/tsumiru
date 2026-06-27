@@ -95,6 +95,8 @@ enum DBKeys {
   // The release version the user chose to skip in the update prompt. The
   // prompt stays hidden until a release newer than this one appears.
   dismissedUpdateVersion(''),
+  updateProgressAfterReading(true),
+  updateProgressManualMarkRead(true),
   ;
 
   const DBKeys(this.initial);

@@ -10,7 +10,9 @@ environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
+  app_links: ^6.4.0
   built_collection: ^5.1.1
+  collection: ^1.19.0
   cached_network_image: ^3.2.2
   cached_network_image_platform_interface: ^4.0.0
   connectivity_plus: ^6.1.3
