@@ -1,0 +1,89 @@
+fragment TrackerDto on TrackerType {
+  id
+  name
+  icon
+  isLoggedIn
+  isTokenExpired
+  authUrl
+  supportsTrackDeletion
+  supportsPrivateTracking
+  supportsReadingDates
+  scores
+  statuses { name value }
+}
+
+fragment TrackRecordDto on TrackRecordType {
+  id
+  trackerId
+  remoteId
+  title
+  remoteUrl
+  status
+  lastChapterRead
+  totalChapters
+  score
+  displayScore
+  startDate
+  finishDate
+  private
+}
+
+fragment TrackSearchDto on TrackSearchType {
+  remoteId
+  title
+  coverUrl
+  publishingType
+  publishingStatus
+  summary
+  trackingUrl
+}
+
+query GetTrackers { trackers { nodes { ...TrackerDto } } }
+
+query GetMangaTrackRecords($mangaId: Int!) {
+  manga(id: $mangaId) { id trackRecords { nodes { ...TrackRecordDto } totalCount } }
+}
+
+query SearchTracker($trackerId: Int!, $query: String!) {
+  searchTracker(input: { trackerId: $trackerId, query: $query }) {
+    trackSearches { ...TrackSearchDto }
+  }
+}
+
+mutation TrackerLoginOAuth($trackerId: Int!, $callbackUrl: String!) {
+  loginTrackerOAuth(input: { trackerId: $trackerId, callbackUrl: $callbackUrl }) {
+    tracker { ...TrackerDto }
+  }
+}
+
+mutation TrackerLoginCredentials($trackerId: Int!, $username: String!, $password: String!) {
+  loginTrackerCredentials(input: { trackerId: $trackerId, username: $username, password: $password }) {
+    tracker { ...TrackerDto }
+  }
+}
+
+mutation TrackerLogout($trackerId: Int!) {
+  logoutTracker(input: { trackerId: $trackerId }) { tracker { ...TrackerDto } }
+}
+
+mutation BindTrack($mangaId: Int!, $trackerId: Int!, $remoteId: LongString!, $private: Boolean!) {
+  bindTrack(input: { mangaId: $mangaId, trackerId: $trackerId, remoteId: $remoteId, private: $private }) {
+    trackRecord { ...TrackRecordDto }
+  }
+}
+
+mutation UpdateTrack($input: UpdateTrackInput!) {
+  updateTrack(input: $input) { trackRecord { ...TrackRecordDto } }
+}
+
+mutation UnbindTrack($recordId: Int!, $deleteRemoteTrack: Boolean) {
+  unbindTrack(input: { recordId: $recordId, deleteRemoteTrack: $deleteRemoteTrack }) { trackRecord { id } }
+}
+
+mutation FetchTrack($recordId: Int!) {
+  fetchTrack(input: { recordId: $recordId }) { trackRecord { ...TrackRecordDto } }
+}
+
+mutation TrackProgress($mangaId: Int!) {
+  trackProgress(input: { mangaId: $mangaId }) { trackRecords { id } }
+}
