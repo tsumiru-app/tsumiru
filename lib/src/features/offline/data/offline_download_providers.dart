@@ -260,11 +260,16 @@ Future<void> _deleteDeviceCopyIfDeletable(
   int chapterId,
   bool allowBookmarked,
 ) async {
-  if (ref.read(offlineDownloadManagerProvider) == null) return;
-  final c = await ref.read(offlineRepositoryProvider).chapterById(chapterId);
-  if (c == null || c.deviceState != OfflineDeviceState.downloaded) return;
-  if (c.isBookmarked && !allowBookmarked) return;
-  await deleteChapterFromDevice(ref, chapterId);
+  try {
+    if (ref.read(offlineDownloadManagerProvider) == null) return;
+    final c = await ref.read(offlineRepositoryProvider).chapterById(chapterId);
+    if (c == null || c.deviceState != OfflineDeviceState.downloaded) return;
+    if (c.isBookmarked && !allowBookmarked) return;
+    await deleteChapterFromDevice(ref, chapterId);
+  } catch (e) {
+    // Best-effort — a failed auto-delete must never surface during reading.
+    logger.e('Offline: on-device delete-on-read failed for $chapterId: $e');
+  }
 }
 
 // --- server -----------------------------------------------------------------
@@ -300,24 +305,38 @@ Future<void> maybeDeleteOnManualServer(
 }
 
 /// Delete a chapter's SERVER copy iff it's downloaded on the server and the
-/// bookmark gate allows it, then cascade to drop the device copy. Gated off the
-/// manga's chapter list (the reader's own list), so it no-ops if the chapter
-/// isn't there.
+/// bookmark gate allows it, then cascade to drop the device copy.
+///
+/// Gates off the UNFILTERED chapter list (id lookup — order is irrelevant), so
+/// an active "hide read" filter can't make this silently miss. The bookmark gate
+/// also honours a bookmark made offline that hasn't reached the server yet (the
+/// server DTO would still read false), via the on-device catalog.
 Future<void> _deleteServerCopyIfDeletable(
   WidgetRef ref,
   int mangaId,
   int chapterId,
   bool allowBookmarked,
 ) async {
-  final chapters =
-      ref.read(mangaChapterListWithFilterProvider(mangaId: mangaId)).valueOrNull;
-  final idx = chapters?.indexWhere((e) => e.id == chapterId) ?? -1;
-  if (chapters == null || idx < 0) return;
-  final c = chapters[idx];
-  if (!c.isDownloaded) return;
-  if (c.isBookmarked && !allowBookmarked) return;
-  await ref.read(mangaBookRepositoryProvider).deleteChapters([chapterId]);
-  await cascadeServerDeleteToDevice(ref, [chapterId]);
+  try {
+    final chapters =
+        ref.read(mangaChapterListProvider(mangaId: mangaId)).valueOrNull;
+    final idx = chapters?.indexWhere((e) => e.id == chapterId) ?? -1;
+    if (chapters == null || idx < 0) return;
+    final c = chapters[idx];
+    if (!c.isDownloaded) return;
+    var isBookmarked = c.isBookmarked;
+    if (ref.read(offlineEnabledProvider)) {
+      final row =
+          await ref.read(offlineRepositoryProvider).chapterById(chapterId);
+      if (row?.isBookmarked ?? false) isBookmarked = true;
+    }
+    if (isBookmarked && !allowBookmarked) return;
+    await ref.read(mangaBookRepositoryProvider).deleteChapters([chapterId]);
+    await cascadeServerDeleteToDevice(ref, [chapterId]);
+  } catch (e) {
+    // Best-effort — a failed server auto-delete must never surface mid-read.
+    logger.e('Offline: server delete-on-read failed for $chapterId: $e');
+  }
 }
 
 /// Push any locally-recorded read progress that hasn't reached the server yet
