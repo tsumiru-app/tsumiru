@@ -26,6 +26,7 @@ class OfflineReconciler {
     required this.onDownload,
     required this.onEvict,
     required this.now,
+    this.onServerDownload,
   });
 
   final OfflineDatabase db;
@@ -33,6 +34,13 @@ class OfflineReconciler {
   final Future<void> Function(int chapterId) onDownload;
   final Future<void> Function(int chapterId) onEvict;
   final DateTime now;
+
+  /// Called with chapters the keep-rule wants but the SERVER hasn't downloaded
+  /// yet — enqueue a server download (server-client model: the server fetches
+  /// the source, then a later reconcile pass pulls the device copy once
+  /// serverIsDownloaded flips). Optional; when null those chapters are skipped
+  /// (legacy behaviour).
+  final Future<void> Function(Set<int> chapterIds)? onServerDownload;
 
   Future<ReconcilePlan> reconcileManga(int mangaId) async {
     final manga = await (db.select(db.offlineMangas)
@@ -85,12 +93,21 @@ class OfflineReconciler {
 
     var projectedBytes = retainedBytes;
     final toDownload = <int>{};
+    final toServerDownload = <int>{};
 
     for (final id in desired) {
       final c = byId[id];
       if (c == null) continue;
-      // Unsatisfiable (design N3): server hasn't downloaded it yet — skip.
-      if (!c.serverIsDownloaded) continue;
+      // Wanted but the server hasn't downloaded it yet: ask the server to
+      // download it (it fetches the source); a later reconcile pass pulls the
+      // device copy once serverIsDownloaded flips. Only when a handler is wired.
+      if (!c.serverIsDownloaded) {
+        if (onServerDownload != null &&
+            c.deviceState != OfflineDeviceState.downloaded) {
+          toServerDownload.add(id);
+        }
+        continue;
+      }
       // Already on device — nothing to do.
       if (c.deviceState == OfflineDeviceState.downloaded) continue;
 
@@ -119,6 +136,9 @@ class OfflineReconciler {
     }
     for (final id in toDownload) {
       await onDownload(id);
+    }
+    if (onServerDownload != null && toServerDownload.isNotEmpty) {
+      await onServerDownload!(toServerDownload);
     }
 
     return ReconcilePlan(

@@ -448,6 +448,7 @@ Future<void> reconcileMangaCore({
   required OfflineDownloadCoordinator coordinator,
   required SafetyNetConfig nets,
   required int mangaId,
+  Future<void> Function(List<int> chapterIds)? enqueueServerDownload,
 }) {
   return OfflineReconciler(
     db: db,
@@ -472,6 +473,16 @@ Future<void> reconcileMangaCore({
         logger.e('Offline: reconcile evict skipped for chapter $id: $e');
       }
     },
+    onServerDownload: enqueueServerDownload == null
+        ? null
+        : (ids) async {
+            try {
+              await enqueueServerDownload(ids.toList());
+            } catch (e) {
+              logger
+                  .e('Offline: reconcile server-download enqueue skipped: $e');
+            }
+          },
   ).reconcileManga(mangaId);
 }
 
@@ -488,6 +499,9 @@ Future<void> reconcileManga(Ref ref, int mangaId) async {
     coordinator: coordinator,
     nets: ref.read(safetyNetConfigProvider),
     mangaId: mangaId,
+    enqueueServerDownload: (ids) => ref
+        .read(downloadsRepositoryProvider)
+        .addChaptersBatchToDownloadQueue(ids),
   );
   // Keep-rule sync queued any missing chapters; now start downloading them.
   await ref.read(downloadStarterProvider)();
@@ -506,6 +520,9 @@ Future<void> reconcileMangaWidget(WidgetRef ref, int mangaId) async {
     coordinator: coordinator,
     nets: ref.read(safetyNetConfigProvider),
     mangaId: mangaId,
+    enqueueServerDownload: (ids) => ref
+        .read(downloadsRepositoryProvider)
+        .addChaptersBatchToDownloadQueue(ids),
   );
   // Start downloading the freshly-queued chapters. THIS was the missing wire
   // that made "Download all / unread" silently do nothing on Android.
@@ -524,7 +541,10 @@ Future<void> reconcileAllAtLaunch(ProviderContainer container) async {
   for (final m in await db.libraryManga()) {
     await reconcileMangaCore(
         db: db, repo: repo, manager: manager, coordinator: coordinator,
-        nets: nets, mangaId: m.id);
+        nets: nets, mangaId: m.id,
+        enqueueServerDownload: (ids) => container
+            .read(downloadsRepositoryProvider)
+            .addChaptersBatchToDownloadQueue(ids));
   }
 }
 
