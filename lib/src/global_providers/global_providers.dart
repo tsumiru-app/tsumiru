@@ -4,6 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -134,6 +136,20 @@ GraphQLClient graphQlClient(Ref ref) {
 GraphQLClient graphQlSubscriptionClient(Ref ref) {
   final authType = ref.watch(authTypeKeyProvider) ?? DBKeys.authType.initial;
   final credentials = ref.watch(credentialsProvider).valueOrNull;
+  // Watch ONLY the socket-relevant auth material (cookie + token raw strings)
+  // so this client is rebuilt — and the socket reconnects with fresh auth — on
+  // a re-login or token/cookie refresh. Reading it once (the old behaviour) left
+  // the connection pinned to the auth captured at first connect, so after a
+  // refresh the @requireAuth subscriptions (downloads + library-update feeds)
+  // silently died. Selecting the two raw strings (not the whole credentials
+  // object) avoids tearing the socket down on unrelated writes — e.g. a login
+  // also writes the saved password, which would otherwise reconnect twice.
+  final socketAuth = ref.watch(authCredentialsStoreProvider.select(
+    (s) => (
+      cookie: s.valueOrNull?.simpleLoginCookie,
+      token: s.valueOrNull?.uiAccessToken,
+    ),
+  ));
   final wsUrl = Endpoints.baseApi(
     baseUrl: ref.watch(serverUrlProvider) ?? DBKeys.serverUrl.initial,
     port: ref.watch(serverPortProvider),
@@ -165,15 +181,14 @@ GraphQLClient graphQlSubscriptionClient(Ref ref) {
           : <String, dynamic>{'Authorization': token};
     };
   } else if (authType == AuthType.simpleLogin) {
-    handshakeHeaders = ref
-        .read(authCredentialsStoreProvider)
-        .valueOrNull
-        ?.simpleLoginCookieHeader;
+    final cookie = socketAuth.cookie;
+    handshakeHeaders =
+        (cookie == null || cookie.isEmpty) ? null : {'Cookie': cookie};
   } else if (authType == AuthType.basic && credentials.isNotBlank) {
     handshakeHeaders = {'Authorization': credentials!};
   }
 
-  final Link link = WebSocketLink(
+  final wsLink = WebSocketLink(
     wsUrl,
     subProtocol: GraphQLProtocol.graphqlTransportWs,
     config: SocketClientConfig(
@@ -181,10 +196,13 @@ GraphQLClient graphQlSubscriptionClient(Ref ref) {
       headers: handshakeHeaders,
     ),
   );
+  // Close the previous socket when this provider rebuilds (auth/url changed) or
+  // is disposed, so a re-auth doesn't leak the old connection.
+  ref.onDispose(() => unawaited(wsLink.dispose().catchError((_) {})));
 
   final loggerLink = LoggerLink();
   return GraphQLClient(
-    link: loggerLink.concat(link),
+    link: loggerLink.concat(wsLink),
     defaultPolicies: DefaultPolicies(
       query: Policies(fetch: FetchPolicy.noCache),
     ),
