@@ -148,17 +148,25 @@ class SeriesOfflineButton extends ConsumerWidget {
     ref.invalidate(mangaKeepConfigProvider(mangaId));
     messenger.showSnackBar(SnackBar(content: Text(toast)));
     // The reconcile may pull many chapters; run it in the background and refresh
-    // the on-device count as it completes.
+    // the on-device count when it settles — even on failure, so the badge can't
+    // get stuck, and swallow the error (best-effort background work).
     unawaited(reconcileMangaWidget(ref, mangaId)
-        .then((_) => ref.invalidate(mangaDownloadedCountProvider(mangaId))));
+        .whenComplete(
+            () => ref.invalidate(mangaDownloadedCountProvider(mangaId)))
+        .catchError((_) {/* best-effort */}));
   }
 
   Future<void> _removeAll(BuildContext sheetContext, WidgetRef ref) async {
     Navigator.of(sheetContext).pop();
     final db = ref.read(offlineDatabaseProvider);
-    await db.setKeepRule(mangaId, OfflineKeepRule.off, 3);
-    for (final c in await db.downloadedChaptersForManga(mangaId)) {
-      await deleteChapterFromDevice(ref, c.id);
+    await db.setKeepRule(mangaId, OfflineKeepRule.off, 5);
+    // Purge every chapter with any on-device footprint — not just the fully
+    // downloaded ones — so an in-flight/queued download is cancelled too and
+    // can't finish after the user asked to remove everything.
+    for (final c in await db.chaptersForManga(mangaId)) {
+      if (c.deviceState != OfflineDeviceState.none) {
+        await deleteChapterFromDevice(ref, c.id);
+      }
     }
     ref.invalidate(mangaKeepRuleProvider(mangaId));
     ref.invalidate(mangaKeepConfigProvider(mangaId));
