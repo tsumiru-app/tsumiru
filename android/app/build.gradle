@@ -50,7 +50,7 @@ android {
         applicationId "io.github.aaronbamblett.tsumiru"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
-        minSdkVersion 23 // raised for flutter_foreground_task (Android 6.0+)
+        minSdkVersion flutter.minSdkVersion // raised for flutter_foreground_task (Android 6.0+)
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

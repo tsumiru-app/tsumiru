@@ -35,7 +35,7 @@ Future<String?> discoverServerOnLan({
   Future<bool> Function(String host, int port)? ping,
   int batchSize = 48,
 }) async {
-  final ip = await (wifiIp ?? () => NetworkInfo().getWifiIP())();
+  final ip = await (wifiIp ?? localLanIp)();
   if (ip == null || ip.isEmpty) return null;
 
   final doPing = ping ?? _ping;
@@ -56,10 +56,49 @@ Future<String?> discoverServerOnLan({
 Future<bool> _ping(String host, int port) async {
   try {
     final socket = await Socket.connect(host, port,
-        timeout: const Duration(milliseconds: 120));
+        timeout: const Duration(milliseconds: 1000));
     socket.destroy();
     return true;
   } catch (_) {
     return false;
   }
+}
+
+/// The device's private LAN IPv4, found WITHOUT any runtime permission via
+/// [NetworkInterface.list]. The old default — `network_info_plus.getWifiIP()` —
+/// can return null on a fresh install that hasn't been granted location access,
+/// so the subnet scan never ran and "Search my network" found nothing. Falls
+/// back to the Wi-Fi plugin if no private IPv4 interface is found.
+Future<String?> localLanIp() async {
+  try {
+    final ifaces = await NetworkInterface.list(
+      type: InternetAddressType.IPv4,
+      includeLoopback: false,
+      includeLinkLocal: false,
+    );
+    for (final iface in ifaces) {
+      for (final addr in iface.addresses) {
+        if (_isPrivateV4(addr.address)) return addr.address;
+      }
+    }
+  } catch (_) {
+    // Fall through to the plugin.
+  }
+  try {
+    return await NetworkInfo().getWifiIP();
+  } catch (_) {
+    return null;
+  }
+}
+
+/// RFC 1918 private IPv4: 10/8, 172.16/12, 192.168/16.
+bool _isPrivateV4(String ip) {
+  final parts = ip.split('.');
+  if (parts.length != 4) return false;
+  final a = int.tryParse(parts[0]);
+  final b = int.tryParse(parts[1]);
+  if (a == null || b == null) return false;
+  return a == 10 ||
+      (a == 172 && b >= 16 && b <= 31) ||
+      (a == 192 && b == 168);
 }

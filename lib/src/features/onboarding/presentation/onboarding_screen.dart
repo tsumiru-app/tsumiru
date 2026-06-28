@@ -562,8 +562,15 @@ class _ServerStep extends HookConsumerWidget {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               onPressed: busy ? null : searchNetwork,
-              icon: const Icon(Icons.search_rounded, size: 18),
-              label: Text(context.l10n.onboardingSearchNetwork),
+              icon: state.value == _TestState.searching
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.search_rounded, size: 18),
+              label: Text(state.value == _TestState.searching
+                  ? context.l10n.onboardingSearching
+                  : context.l10n.onboardingSearchNetwork),
             ),
           ),
         Text(context.l10n.onboardingServerPortHint,
@@ -572,15 +579,13 @@ class _ServerStep extends HookConsumerWidget {
         // Validate: test the connection.
         FilledButton.tonalIcon(
           onPressed: busy ? null : testConnection,
-          icon: busy
+          icon: state.value == _TestState.testing
               ? const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.wifi_tethering_rounded),
-          label: Text(state.value == _TestState.searching
-              ? context.l10n.onboardingSearching
-              : context.l10n.onboardingTestConnection),
+          label: Text(context.l10n.onboardingTestConnection),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
         ),
         const SizedBox(height: 12),
