@@ -107,7 +107,8 @@ class DownloadStatusIcon extends HookConsumerWidget {
       } else {
         if (isDownloaded) {
           return IconButton(
-            icon: brandGradientIcon(context, Icons.check_circle_rounded),
+            // Cloud = the SERVER copy; solid indigo = "you have it".
+            icon: brandGradientIcon(context, Icons.cloud_done_rounded),
             onPressed: () async {
               final result = await AsyncValue.guard(
                 () => ref
@@ -123,7 +124,9 @@ class DownloadStatusIcon extends HookConsumerWidget {
           );
         } else {
           return IconButton(
-            icon: const Icon(Icons.download_for_offline_rounded),
+            // Muted outline = a "get it on the server" button.
+            icon: Icon(Icons.cloud_download_outlined,
+                color: context.theme.colorScheme.onSurfaceVariant),
             onPressed: () {
               toggleChapterToQueue(toast, ref, isAdd: true);
             },

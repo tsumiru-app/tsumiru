@@ -50,7 +50,8 @@ class OfflineSaveButton extends ConsumerWidget {
         ),
       OfflineDeviceState.none || OfflineDeviceState.orphaned => IconButton(
           tooltip: 'Save to device',
-          icon: const Icon(Icons.save_alt_rounded),
+          // Muted = a "get it" button (vs the solid-indigo "on device" badge).
+          icon: Icon(Icons.save_alt_rounded, color: cs.onSurfaceVariant),
           onPressed: () => _save(context, ref),
         ),
     };
