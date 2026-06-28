@@ -56,6 +56,13 @@ class LibraryMangaDisplay extends ConsumerWidget {
           onChanged: ref.read(unreadBadgeProvider.notifier).update,
           tristate: false,
         ),
+        CustomCheckboxListTile(
+          title: context.l10n.continueReadingButton,
+          provider: showContinueReadingButtonProvider,
+          onChanged:
+              ref.read(showContinueReadingButtonProvider.notifier).update,
+          tristate: false,
+        ),
       ],
     );
   }

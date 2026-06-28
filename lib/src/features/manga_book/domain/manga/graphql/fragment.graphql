@@ -10,6 +10,9 @@ fragment MangaDto on MangaType {
   chaptersLastFetchedAt
   description
   downloadCount
+  firstUnreadChapter {
+    ...ChapterDto
+  }
   genre
   id
   inLibrary

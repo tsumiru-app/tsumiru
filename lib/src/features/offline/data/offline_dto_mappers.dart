@@ -21,6 +21,7 @@ MangaDto offlineMangaToDto(
   OfflineManga m, {
   int chapterCount = 0,
   String? lastReadAt,
+  OfflineChapter? firstUnread,
 }) =>
     Fragment$MangaDto(
       id: m.id,
@@ -29,6 +30,11 @@ MangaDto offlineMangaToDto(
       bookmarkCount: 0,
       chapters: Fragment$MangaDto$chapters(totalCount: chapterCount),
       downloadCount: 0,
+      // The next unread chapter that's downloaded on this device, if any. Drives
+      // the offline "continue reading" button — left null (button hidden) when
+      // the next unread chapter isn't on the device, so it's never a dead end.
+      firstUnreadChapter:
+          firstUnread == null ? null : offlineChapterToDto(firstUnread),
       genre: const [],
       inLibrary: true,
       inLibraryAt: '0',

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_sizes.dart';
 import '../../../features/manga_book/domain/manga/manga_model.dart';
 import '../../server_image.dart';
+import '../widgets/continue_reading_button.dart';
 import '../widgets/manga_badges.dart';
 
 class MangaCoverListTile extends StatelessWidget {
@@ -17,6 +18,7 @@ class MangaCoverListTile extends StatelessWidget {
     required this.manga,
     this.onPressed,
     this.onLongPress,
+    this.onContinueReading,
     this.showBadges = true,
     this.showCountBadges = false,
     this.selected = false,
@@ -25,6 +27,9 @@ class MangaCoverListTile extends StatelessWidget {
   final MangaDto manga;
   final VoidCallback? onPressed;
   final VoidCallback? onLongPress;
+
+  /// When non-null, a play button at the row end opens the next unread chapter.
+  final VoidCallback? onContinueReading;
   final bool showCountBadges;
   final bool showBadges;
   final bool selected;
@@ -61,6 +66,14 @@ class MangaCoverListTile extends StatelessWidget {
           ),
             if (showBadges)
               MangaBadgesRow(manga: manga, showCountBadges: showCountBadges),
+            if (onContinueReading != null)
+              Padding(
+                padding: KEdgeInsets.h8.size,
+                child: ContinueReadingButton(
+                  onPressed: onContinueReading!,
+                  size: 28,
+                ),
+              ),
           ],
         ),
       ),

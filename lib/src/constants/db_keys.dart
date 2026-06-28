@@ -38,6 +38,9 @@ enum DBKeys {
   downloadedBadge(false),
   unreadBadge(true),
   languageBadge(false),
+  // Library display: overlay a play button on covers that jumps straight into
+  // the next unread chapter. Off by default, matching Mihon/Komikku/WebUI.
+  showContinueReadingButton(false),
   l10n(Locale('en')),
   mangaFilterDownloaded(null),
   mangaFilterOffline(null),

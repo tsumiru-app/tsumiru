@@ -23,6 +23,7 @@ class MangaCoverDescriptiveListTile extends StatelessWidget {
     required this.manga,
     this.onPressed,
     this.onLongPress,
+    this.onContinueReading,
     this.onTitleClicked,
     this.showBadges = true,
     this.showCountBadges = true,
@@ -34,6 +35,10 @@ class MangaCoverDescriptiveListTile extends StatelessWidget {
   final bool showCountBadges;
   final VoidCallback? onPressed;
   final VoidCallback? onLongPress;
+
+  /// When non-null, a play button is overlaid on the cover that opens the next
+  /// unread chapter.
+  final VoidCallback? onContinueReading;
   final ValueChanged<String?>? onTitleClicked;
   final bool selected;
   /// Optional widget rendered below the status/source line (details screen only).
@@ -62,6 +67,7 @@ class MangaCoverDescriptiveListTile extends StatelessWidget {
                 showBadges: false,
                 showTitle: false,
                 showDarkOverlay: false,
+                onContinueReading: onContinueReading,
               ),
             ),
             Expanded(

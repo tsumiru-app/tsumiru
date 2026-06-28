@@ -24,6 +24,13 @@ class UnreadBadge extends _$UnreadBadge with SharedPreferenceClientMixin<bool> {
   bool? build() => initialize(DBKeys.unreadBadge);
 }
 
+@riverpod
+class ShowContinueReadingButton extends _$ShowContinueReadingButton
+    with SharedPreferenceClientMixin<bool> {
+  @override
+  bool? build() => initialize(DBKeys.showContinueReadingButton);
+}
+
 // @riverpod
 // class LanguageBadge extends _$LanguageBadge
 //     with SharedPreferenceClient<bool> {

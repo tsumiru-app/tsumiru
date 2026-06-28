@@ -38,6 +38,22 @@ void main() {
     expect(neverRead.lastReadChapter, isNull);
   });
 
+  test('offlineMangaToDto carries firstUnreadChapter when supplied', () async {
+    await db.upsertMangaMetadata(id: 7, title: 'Solo', updatedAt: DateTime(2026));
+    final m = (await db.mangaById(7))!;
+    await db.upsertChapterMetadata(id: 42, mangaId: 7, name: 'Ch 5',
+        chapterIndex: 5, isRead: false, lastPageRead: 0, isBookmarked: false,
+        serverIsDownloaded: true, pageCount: 18, updatedAt: DateTime(2026));
+    final chapter = (await db.chaptersForManga(7)).single;
+
+    final withTarget = offlineMangaToDto(m, firstUnread: chapter);
+    expect(withTarget.firstUnreadChapter?.id, 42);
+    expect(withTarget.firstUnreadChapter?.sourceOrder, 5);
+
+    final noTarget = offlineMangaToDto(m);
+    expect(noTarget.firstUnreadChapter, isNull);
+  });
+
   test('offlineChapterToDto maps fields from a catalog row', () async {
     await db.upsertChapterMetadata(id: 3, mangaId: 7, name: 'Ch 3',
         chapterIndex: 3, isRead: true, lastPageRead: 4, isBookmarked: false,
