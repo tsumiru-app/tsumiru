@@ -11,8 +11,11 @@ class SectionTitle extends StatelessWidget {
         padding: KEdgeInsets.h16.size + KEdgeInsets.v4.size,
         child: Text(
           title,
+          // Use the brand accent from the colorScheme — ThemeData.primaryColor
+          // is a near-black default on the dark theme (it's never set), which
+          // left section titles invisible.
           style: context.textTheme.titleSmall
-              ?.copyWith(color: context.theme.primaryColor),
+              ?.copyWith(color: context.theme.colorScheme.primary),
         ),
       );
 }

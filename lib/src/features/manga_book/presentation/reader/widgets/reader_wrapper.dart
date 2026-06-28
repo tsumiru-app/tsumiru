@@ -533,16 +533,9 @@ class ReaderWrapper extends HookConsumerWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                SingleChapterActionIcon(
-                                  icon: chapter.isBookmarked
-                                      ? Icons.bookmark_rounded
-                                      : Icons.bookmark_outline_rounded,
+                                _ReaderBookmarkButton(
                                   chapterId: chapter.id,
-                                  change: ChapterChange(
-                                      isBookmarked: !chapter.isBookmarked),
-                                  refresh: () => ref.refresh(
-                                      chapterProvider(chapterId: chapter.id)
-                                          .future),
+                                  fallbackIsBookmarked: chapter.isBookmarked,
                                 ),
                                 IconButton(
                                   icon: const Icon(
@@ -1052,6 +1045,38 @@ class ReaderView extends HookWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The reader's bookmark toggle. Watches the chapter's bookmark state directly
+/// so the icon flips the moment a toggle lands — the surrounding controls live
+/// in a persistent Scaffold bottomSheet that doesn't rebuild when the chapter
+/// refreshes, so drawing the icon from a passed-in [ChapterDto] snapshot left it
+/// stale until the reader was reopened.
+class _ReaderBookmarkButton extends ConsumerWidget {
+  const _ReaderBookmarkButton({
+    required this.chapterId,
+    required this.fallbackIsBookmarked,
+  });
+
+  final int chapterId;
+  final bool fallbackIsBookmarked;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isBookmarked = ref.watch(
+          chapterProvider(chapterId: chapterId)
+              .select((c) => c.valueOrNull?.isBookmarked),
+        ) ??
+        fallbackIsBookmarked;
+    return SingleChapterActionIcon(
+      icon: isBookmarked
+          ? Icons.bookmark_rounded
+          : Icons.bookmark_outline_rounded,
+      chapterId: chapterId,
+      change: ChapterChange(isBookmarked: !isBookmarked),
+      refresh: () => ref.refresh(chapterProvider(chapterId: chapterId).future),
     );
   }
 }

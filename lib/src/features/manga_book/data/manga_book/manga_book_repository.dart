@@ -58,13 +58,17 @@ class MangaBookRepository {
       );
 
   Future<void> deleteChapters(List<int> chapterIds) =>
-      client.mutate$DeleteDownloadedChapters(
-        Options$Mutation$DeleteDownloadedChapters(
-          variables: Variables$Mutation$DeleteDownloadedChapters(
-            input: Input$DeleteDownloadedChaptersInput(ids: chapterIds),
-          ),
-        ),
-      );
+      client
+          .mutate$DeleteDownloadedChapters(
+            Options$Mutation$DeleteDownloadedChapters(
+              variables: Variables$Mutation$DeleteDownloadedChapters(
+                input: Input$DeleteDownloadedChaptersInput(ids: chapterIds),
+              ),
+            ),
+          )
+          // Surface failure as a throw so callers don't cascade a device delete
+          // when the server delete didn't actually happen.
+          .getData((data) => null);
 
   // Mangas
   Future<MangaDto?> getManga({
@@ -145,17 +149,22 @@ class MangaBookRepository {
   Future<void> putChapter({
     required int chapterId,
     required ChapterChange patch,
-  }) async =>
-      client.mutate$UpdateChapter(
-        Options$Mutation$UpdateChapter(
-          variables: Variables$Mutation$UpdateChapter(
-            input: Input$UpdateChapterInput(
-              id: chapterId,
-              patch: patch,
+  }) =>
+      client
+          .mutate$UpdateChapter(
+            Options$Mutation$UpdateChapter(
+              variables: Variables$Mutation$UpdateChapter(
+                input: Input$UpdateChapterInput(
+                  id: chapterId,
+                  patch: patch,
+                ),
+              ),
             ),
-          ),
-        ),
-      );
+          )
+          // Surface a failed mutation as a throw (like every other call here),
+          // so offline callers detect the failure and keep the change pending
+          // instead of clearing the dirty flag on a push that never landed.
+          .getData((data) => null);
 
   Future<void> patchMangaMeta({
     required int mangaId,

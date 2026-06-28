@@ -92,7 +92,6 @@ class ChapterListTile extends StatelessWidget {
           children: [
             OfflineSaveButton(
               chapterId: chapter.id,
-              serverIsDownloaded: chapter.isDownloaded.ifNull(),
             ),
             DownloadStatusIcon(
               updateData: updateData,

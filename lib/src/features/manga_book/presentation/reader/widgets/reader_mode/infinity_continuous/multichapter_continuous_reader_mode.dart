@@ -18,15 +18,16 @@ import '../../../../../../../utils/extensions/custom_extensions.dart';
 import '../../../../../../../utils/misc/app_utils.dart';
 import '../../../../../../../widgets/server_image.dart';
 import '../../../../../../../widgets/zoom/scroll_offset_to_scroll_controller.dart';
+import '../../../../../../offline/data/offline_download_providers.dart';
 import '../../../../../../settings/presentation/reader/widgets/reader_feedback_toasts_tile/reader_feedback_toasts_tile.dart';
 import '../../../../../../settings/presentation/reader/widgets/reader_pinch_to_zoom/reader_pinch_to_zoom.dart';
 import '../../../../../../settings/presentation/reader/widgets/reader_scroll_animation_tile/reader_scroll_animation_tile.dart';
+import '../../../../../../tracking/domain/track_progress_gate.dart';
 import '../../../../../data/manga_book/manga_book_repository.dart';
 import '../../../../../domain/chapter/chapter_model.dart';
 import '../../../../../domain/chapter_batch/chapter_batch_model.dart';
 import '../../../../../domain/chapter_page/chapter_page_model.dart';
 import '../../../../../domain/manga/manga_model.dart';
-import '../../../../../../tracking/domain/track_progress_gate.dart';
 import '../../../../manga_details/controller/manga_details_controller.dart';
 import '../../../controller/reader_controller.dart';
 import '../../reader_wrapper.dart';
@@ -596,6 +597,17 @@ class MultiChapterContinuousReaderMode extends HookConsumerWidget {
           image: imageProvider,
           fit: BoxFit.fitWidth,
           width: double.infinity,
+          // A page file deleted while still loaded (e.g. delete-on-read, then
+          // scrolling back to it offline) would otherwise throw and paint
+          // Flutter's red error widget for every page. Show a stable-height
+          // broken-image placeholder instead.
+          errorBuilder: (context, error, stackTrace) => SizedBox(
+            height: placeholderHeight,
+            width: double.infinity,
+            child: const Center(
+              child: Icon(Icons.broken_image_rounded, color: Colors.grey),
+            ),
+          ),
           // Reserve the page's height UNTIL the bitmap decodes. The network path
           // gets this for free via progressIndicatorBuilder, but the offline
           // (file://) ServerImage branch skips that and renders the bare Image —
@@ -713,6 +725,20 @@ void _markChapterRead(
       mangaId: mangaId,
       isRead: true,
       manual: false,
+    ));
+    // Delete the on-device copy once read, if the user opted in.
+    // The chapter just crossed is behind the reader now → auto-delete it (both
+    // the on-device copy and, per the server settings, the server copy). Each
+    // no-ops if its own setting is off.
+    unawaited(maybeDeleteOnReadLocal(
+      ref,
+      mangaId: mangaId,
+      readChapterId: chapter.id,
+    ));
+    unawaited(maybeDeleteOnReadServer(
+      ref,
+      mangaId: mangaId,
+      readChapterId: chapter.id,
     ));
     // NOTE: deliberately do NOT invalidate chapterProvider / mangaChapterList
     // here. Doing so while reading rebuilds ReaderScreen through an async reload,

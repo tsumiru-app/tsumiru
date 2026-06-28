@@ -12,21 +12,21 @@ import '../data/offline_download_providers.dart';
 import '../data/offline_repository.dart';
 
 /// Save / on-device indicator for a chapter. Hidden on web / when offline is
-/// unavailable, and gated on the chapter being downloaded server-side (the
-/// product policy: we mirror the server's copy, we don't re-download sources).
+/// unavailable. The button is shown even for chapters the server hasn't
+/// downloaded yet: tapping it cascades a server download first (the server
+/// fetches the source), then pulls the device copy — we never scrape sources
+/// ourselves (see [saveChapterToDevice]).
 class OfflineSaveButton extends ConsumerWidget {
   const OfflineSaveButton({
     super.key,
     required this.chapterId,
-    required this.serverIsDownloaded,
   });
 
   final int chapterId;
-  final bool serverIsDownloaded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(offlineEnabledProvider) || !serverIsDownloaded) {
+    if (!ref.watch(offlineEnabledProvider)) {
       return const SizedBox.shrink();
     }
     final state = ref
@@ -50,7 +50,8 @@ class OfflineSaveButton extends ConsumerWidget {
         ),
       OfflineDeviceState.none || OfflineDeviceState.orphaned => IconButton(
           tooltip: 'Save to device',
-          icon: const Icon(Icons.save_alt_rounded),
+          // Muted = a "get it" button (vs the solid-indigo "on device" badge).
+          icon: Icon(Icons.save_alt_rounded, color: cs.onSurfaceVariant),
           onPressed: () => _save(context, ref),
         ),
     };

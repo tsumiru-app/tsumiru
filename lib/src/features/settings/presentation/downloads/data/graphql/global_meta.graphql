@@ -1,0 +1,20 @@
+fragment GlobalMetaDto on GlobalMetaType {
+  key
+  value
+}
+
+query GlobalMetas {
+  metas {
+    nodes {
+      ...GlobalMetaDto
+    }
+  }
+}
+
+mutation SetGlobalMeta($key: String!, $value: String!) {
+  setGlobalMeta(input: {meta: {key: $key, value: $value}}) {
+    meta {
+      ...GlobalMetaDto
+    }
+  }
+}
