@@ -98,7 +98,10 @@ class MangaCoverGridTile extends StatelessWidget {
                   shadows: const [Shadow(blurRadius: 4)],
                 ),
               ),
-            if (onContinueReading != null && !selected)
+            // No title to flow beside (cover-only / descriptive-list cover):
+            // overlay the button on the cover corner. With a title, the button
+            // lives in the footer row instead so it can't cover the text.
+            if (onContinueReading != null && !selected && !showTitle)
               Positioned(
                 right: 6,
                 bottom: 6,
@@ -124,6 +127,15 @@ class MangaCoverGridTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                   ),
+                  // The button shares the footer row: the title takes the
+                  // remaining width, so it can never sit under the button.
+                  trailing: onContinueReading != null
+                      ? ContinueReadingButton(
+                          onPressed: onContinueReading!,
+                          size: 28,
+                          iconSize: 16,
+                        )
+                      : null,
                 )
               : null,
           child: manga.thumbnailUrl.isNotBlank
