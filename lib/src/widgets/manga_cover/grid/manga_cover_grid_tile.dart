@@ -12,6 +12,7 @@ import '../../../features/manga_book/domain/manga/manga_model.dart';
 import '../../../features/manga_book/presentation/manga_thumbnail_viewer/manga_thumbnail_viewer.dart';
 import '../../../utils/extensions/custom_extensions.dart';
 import '../../server_image.dart';
+import '../widgets/continue_reading_button.dart';
 import '../widgets/manga_badges.dart';
 
 class MangaCoverGridTile extends StatelessWidget {
@@ -20,6 +21,7 @@ class MangaCoverGridTile extends StatelessWidget {
     required this.manga,
     this.onPressed,
     this.onLongPress,
+    this.onContinueReading,
     this.showTitle = true,
     this.showBadges = true,
     this.showCountBadges = false,
@@ -29,6 +31,11 @@ class MangaCoverGridTile extends StatelessWidget {
   final MangaDto manga;
   final VoidCallback? onPressed;
   final VoidCallback? onLongPress;
+
+  /// When non-null, a play button is overlaid on the cover that opens the next
+  /// unread chapter. The library list supplies this only when the toggle is on
+  /// and a target chapter exists.
+  final VoidCallback? onContinueReading;
   final bool showCountBadges;
   final bool showTitle;
   final bool showBadges;
@@ -91,6 +98,15 @@ class MangaCoverGridTile extends StatelessWidget {
                   shadows: const [Shadow(blurRadius: 4)],
                 ),
               ),
+            // No title to flow beside (cover-only / descriptive-list cover):
+            // overlay the button on the cover corner. With a title, the button
+            // lives in the footer row instead so it can't cover the text.
+            if (onContinueReading != null && !selected && !showTitle)
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: ContinueReadingButton(onPressed: onContinueReading!),
+              ),
           ],
         ),
       ),
@@ -111,6 +127,15 @@ class MangaCoverGridTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                   ),
+                  // The button shares the footer row: the title takes the
+                  // remaining width, so it can never sit under the button.
+                  trailing: onContinueReading != null
+                      ? ContinueReadingButton(
+                          onPressed: onContinueReading!,
+                          size: 28,
+                          iconSize: 16,
+                        )
+                      : null,
                 )
               : null,
           child: manga.thumbnailUrl.isNotBlank

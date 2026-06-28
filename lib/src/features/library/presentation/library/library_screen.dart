@@ -98,11 +98,18 @@ class LibraryScreen extends HookConsumerWidget {
                               } else {
                                 showModalBottomSheet(
                                   context: context,
+                                  isScrollControlled: true,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: KBorderRadius.rT16.radius,
                                   ),
                                   clipBehavior: Clip.hardEdge,
-                                  builder: (_) => const LibraryMangaOrganizer(),
+                                  // Taller than the default (~0.56) so the
+                                  // Display tab's options all fit without a
+                                  // cramped scroll.
+                                  builder: (_) => const FractionallySizedBox(
+                                    heightFactor: 0.72,
+                                    child: LibraryMangaOrganizer(),
+                                  ),
                                 );
                               }
                             },

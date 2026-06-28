@@ -312,6 +312,30 @@ class OfflineDatabase extends _$OfflineDatabase {
     return result;
   }
 
+  /// The next unread chapter that is downloaded on this device, per manga — the
+  /// lowest `chapterIndex` row with `isRead = false` and
+  /// `deviceState = downloaded`. Drives the offline "continue reading" button:
+  /// offline you can only open a chapter that's actually on the device, so a
+  /// manga with no downloaded unread chapter is simply absent from the map.
+  Future<Map<int, OfflineChapter>> firstUnreadDownloadedChapterByManga() async {
+    final rows = await (select(offlineChapters)
+          ..where((t) =>
+              t.isRead.equals(false) &
+              t.deviceState.equalsValue(OfflineDeviceState.downloaded))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.mangaId),
+            (t) => OrderingTerm(expression: t.chapterIndex),
+          ]))
+        .get();
+    final result = <int, OfflineChapter>{};
+    for (final c in rows) {
+      // Rows are ordered by chapterIndex, so the first seen per manga is the
+      // earliest unread downloaded chapter.
+      result.putIfAbsent(c.mangaId, () => c);
+    }
+    return result;
+  }
+
   Future<List<OfflineChapter>> chaptersForManga(int mangaId) =>
       (select(offlineChapters)
             ..where((t) => t.mangaId.equals(mangaId))

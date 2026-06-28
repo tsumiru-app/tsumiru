@@ -16,6 +16,7 @@ import '../../../../widgets/emoticons.dart';
 import '../../../../widgets/manga_cover/grid/manga_cover_grid_tile.dart';
 import '../../../../widgets/manga_cover/list/manga_cover_descriptive_list_tile.dart';
 import '../../../../widgets/manga_cover/list/manga_cover_list_tile.dart';
+import '../../../../widgets/manga_cover/providers/manga_cover_providers.dart';
 import '../../../../widgets/selection_action_bar.dart';
 import '../../../manga_book/data/downloads/downloads_repository.dart';
 import '../../../manga_book/data/manga_book/manga_book_repository.dart';
@@ -60,6 +61,20 @@ class CategoryMangaList extends HookConsumerWidget {
       } else {
         MangaRoute(mangaId: manga.id, categoryId: categoryId).push(context);
       }
+    }
+
+    // Continue-reading button: opt-in display toggle. Shown only when the server
+    // (or offline catalog) reports a next-unread chapter, and never while
+    // multi-selecting (taps belong to selection then). Opens that chapter
+    // straight in the reader, bypassing the details page.
+    final showContinueReading =
+        ref.watch(showContinueReadingButtonProvider).ifNull(false);
+    VoidCallback? continueReadingFor(MangaDto manga) {
+      if (!showContinueReading || selecting) return null;
+      final chapter = manga.firstUnreadChapter;
+      if (chapter == null) return null;
+      return () =>
+          ReaderRoute(mangaId: manga.id, chapterId: chapter.id).push(context);
     }
 
     // Mark every chapter of the selected series read / unread, via the bulk
@@ -108,6 +123,7 @@ class CategoryMangaList extends HookConsumerWidget {
                 selected: selection.value.contains(items[index].id),
                 onPressed: () => open(items[index]),
                 onLongPress: () => toggle(items[index].id),
+                onContinueReading: continueReadingFor(items[index]),
                 showCountBadges: true,
               ),
             ),
@@ -119,6 +135,7 @@ class CategoryMangaList extends HookConsumerWidget {
                 selected: selection.value.contains(items[index].id),
                 onLongPress: () => toggle(items[index].id),
                 onPressed: () => open(items[index]),
+                onContinueReading: continueReadingFor(items[index]),
                 showCountBadges: true,
                 showDarkOverlay: false,
               ),
@@ -131,6 +148,7 @@ class CategoryMangaList extends HookConsumerWidget {
                 selected: selection.value.contains(items[index].id),
                 onPressed: () => open(items[index]),
                 onLongPress: () => toggle(items[index].id),
+                onContinueReading: continueReadingFor(items[index]),
                 showBadges: true,
               ),
             ),

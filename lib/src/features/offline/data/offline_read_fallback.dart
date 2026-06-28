@@ -25,9 +25,14 @@ Future<List<MangaDto>?> libraryWithOfflineFallback({
     final rows = await db.libraryManga();
     if (rows.isEmpty) rethrow;
     final lastReadByManga = await db.lastReadAtByManga();
+    final firstUnreadByManga = await db.firstUnreadDownloadedChapterByManga();
     return [
       for (final m in rows)
-        offlineMangaToDto(m, lastReadAt: lastReadByManga[m.id]),
+        offlineMangaToDto(
+          m,
+          lastReadAt: lastReadByManga[m.id],
+          firstUnread: firstUnreadByManga[m.id],
+        ),
     ];
   }
 }

@@ -25,6 +25,35 @@ void main() {
     expect(r!.map((m) => m.id).toSet(), {1, 2});
   });
 
+  test('library: offline continue-reading target is the earliest unread '
+      'downloaded chapter', () async {
+    await db.upsertMangaMetadata(id: 1, title: 'A', updatedAt: DateTime(2026));
+    // ch1 read+downloaded, ch2 unread+downloaded, ch3 unread+downloaded.
+    // The button should point at ch2 (earliest unread that's on the device).
+    for (final (id, idx, read) in [(11, 1, true), (12, 2, false), (13, 3, false)]) {
+      await db.upsertChapterMetadata(id: id, mangaId: 1, name: 'c$id',
+          chapterIndex: idx, isRead: read, lastPageRead: 0, isBookmarked: false,
+          serverIsDownloaded: true, pageCount: 1, updatedAt: DateTime(2026));
+      await db.setChapterDeviceState(id, OfflineDeviceState.downloaded);
+    }
+    final r = await libraryWithOfflineFallback(
+        fetch: boom, db: db, offlineEnabled: true);
+    expect(r!.single.firstUnreadChapter?.id, 12);
+  });
+
+  test('library: no offline button when the next unread chapter is not '
+      'downloaded', () async {
+    await db.upsertMangaMetadata(id: 1, title: 'A', updatedAt: DateTime(2026));
+    // Unread chapter exists but only as metadata (deviceState defaults to none),
+    // so it can't be opened offline -> firstUnreadChapter stays null (hidden).
+    await db.upsertChapterMetadata(id: 21, mangaId: 1, name: 'c21',
+        chapterIndex: 1, isRead: false, lastPageRead: 0, isBookmarked: false,
+        serverIsDownloaded: false, pageCount: 1, updatedAt: DateTime(2026));
+    final r = await libraryWithOfflineFallback(
+        fetch: boom, db: db, offlineEnabled: true);
+    expect(r!.single.firstUnreadChapter, isNull);
+  });
+
   test('library: rethrows when offline disabled', () async {
     await db.upsertMangaMetadata(id: 1, title: 'A', updatedAt: DateTime(2026));
     expect(libraryWithOfflineFallback(fetch: boom, db: db, offlineEnabled: false),
