@@ -1781,7 +1781,7 @@
     "@offlineDownloadAll": {
         "description": "Series offline action: download every chapter to this device"
     },
-    "offlineRemoveSeries": "Remove all downloads",
+    "offlineRemoveSeries": "Remove all (this series)",
     "@offlineRemoveSeries": {
         "description": "Series offline action: remove this series' downloads from the device"
     },
