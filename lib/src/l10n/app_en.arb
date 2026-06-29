@@ -1804,6 +1804,29 @@
     "@offlineDownloadingToast": {
         "description": "Snackbar shown after starting a series download"
     },
+    "manageDownloads": "Manage downloads",
+    "@manageDownloads": {
+        "description": "Title/entry for the page listing on-device keep-rule subscriptions"
+    },
+    "manageDownloadsEmpty": "No download subscriptions yet",
+    "manageDownloadsNothingYet": "Nothing downloaded yet",
+    "offlineManualOnly": "Manual only",
+    "offlineManageHint": "Series saved on this device. Tap the sliders icon on a series to auto-keep new chapters, or remove a series to free space. Long-press to select several.",
+    "manageDownloadsChangeRule": "Change rule",
+    "manageDownloadsStopKeep": "Stop keeping (keep files)",
+    "manageDownloadsStopDelete": "Stop keeping & delete files",
+    "manageDownloadsKeepFilesConfirm": "Stop auto-keeping {count} series but leave the chapters already downloaded on this device?",
+    "@manageDownloadsKeepFilesConfirm": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "manageDownloadsDeleteConfirm": "Stop keeping {count} series and delete their downloaded chapters from this device? The server copies are untouched.",
+    "@manageDownloadsDeleteConfirm": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "manageDownloadsGrowConfirm": "This will download more chapters for {count} series. Continue?",
+    "@manageDownloadsGrowConfirm": {
+        "placeholders": { "count": { "type": "int" } }
+    },
     "offlineDownloadingCount": "Downloading {count}",
     "@offlineDownloadingCount": {
         "description": "Series button label while N chapters are downloading",

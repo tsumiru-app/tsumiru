@@ -412,6 +412,48 @@ class OfflineDatabase extends _$OfflineDatabase {
             ])))
       .watch();
 
+  /// Live list of every series with an offline footprint on this device —
+  /// either chapters present (downloaded / in-flight) OR an active keep-rule
+  /// (`keepRule != off`) — with per-series aggregates and the manga row (which
+  /// carries `keepRule` / `keepUnreadCount`). The union is what makes the
+  /// Downloads → On device tab the single surface: a rule with nothing
+  /// downloaded yet still appears, and hand-saved chapters with no rule still
+  /// appear. Updates on either table changing.
+  Stream<List<({OfflineManga manga, int downloaded, int inFlight, int bytes})>>
+      watchOfflineSeries() {
+    final downloaded = offlineChapters.id.count(
+        filter:
+            offlineChapters.deviceState.equalsValue(OfflineDeviceState.downloaded));
+    final inFlight = offlineChapters.id.count(
+        filter: offlineChapters.deviceState
+                .equalsValue(OfflineDeviceState.downloading) |
+            offlineChapters.deviceState.equalsValue(OfflineDeviceState.queued));
+    final byteSum = offlineChapters.bytes.sum(
+        filter:
+            offlineChapters.deviceState.equalsValue(OfflineDeviceState.downloaded));
+    final query = select(offlineMangas).join([
+      leftOuterJoin(offlineChapters,
+          offlineChapters.mangaId.equalsExp(offlineMangas.id)),
+    ])
+      ..addColumns([downloaded, inFlight, byteSum])
+      ..groupBy(
+        [offlineMangas.id],
+        // Keep series that have files OR a rule; drop the rest of the library.
+        having: downloaded.isBiggerThanValue(0) |
+            inFlight.isBiggerThanValue(0) |
+            offlineMangas.keepRule.equalsValue(OfflineKeepRule.off).not(),
+      );
+    return query.watch().map((rows) => [
+          for (final row in rows)
+            (
+              manga: row.readTable(offlineMangas),
+              downloaded: row.read(downloaded) ?? 0,
+              inFlight: row.read(inFlight) ?? 0,
+              bytes: row.read(byteSum) ?? 0,
+            ),
+        ]);
+  }
+
   /// How many pages of a chapter are already on disk. Cheap COUNT (no row
   /// materialisation) — called on the main isolate on every page completion.
   Future<int> downloadedPageCount(int chapterId) async {

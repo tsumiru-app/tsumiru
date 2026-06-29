@@ -630,50 +630,85 @@ Stream<({int downloaded, int inFlight})> mangaOfflineProgress(
   }).distinct(); // only rebuild the button when the counts actually change
 }
 
-/// Series with chapters on this device — downloaded AND actively downloading /
-/// queued — with per-series counts + byte size. Drives the Downloads → Offline
-/// files tab; live (re-emits as downloads progress or are removed).
+/// Every series with an offline footprint on this device — chapters present
+/// (downloaded / in-flight) OR an active keep-rule — with per-series counts,
+/// byte size, and the manga row (carrying the rule). The single source for the
+/// Downloads → On device tab, which both shows what's downloaded AND manages the
+/// keep-rules. Sorted active-first, then biggest, then strongest rule.
 @riverpod
-Stream<List<({OfflineManga manga, int count, int inFlight, int bytes})>>
-    offlineDownloadedSeries(Ref ref) async* {
-  if (!ref.watch(offlineEnabledProvider)) {
-    yield const [];
-    return;
-  }
-  final db = ref.watch(offlineDatabaseProvider);
-  final mangas = {for (final m in await db.libraryManga()) m.id: m};
-  await for (final chapters in db.watchOfflineChapters()) {
-    final done = <int, int>{};
-    final inFlight = <int, int>{};
-    final bytes = <int, int>{};
-    for (final c in chapters) {
-      if (c.deviceState == OfflineDeviceState.downloaded) {
-        done[c.mangaId] = (done[c.mangaId] ?? 0) + 1;
-        bytes[c.mangaId] = (bytes[c.mangaId] ?? 0) + c.bytes;
-      } else {
-        inFlight[c.mangaId] = (inFlight[c.mangaId] ?? 0) + 1;
-      }
-    }
-    final ids = {...done.keys, ...inFlight.keys};
-    final out = <({OfflineManga manga, int count, int inFlight, int bytes})>[];
-    for (final id in ids) {
-      final m = mangas[id];
-      if (m != null) {
-        out.add((
-          manga: m,
-          count: done[id] ?? 0,
-          inFlight: inFlight[id] ?? 0,
-          bytes: bytes[id] ?? 0,
-        ));
-      }
-    }
-    // Actively-downloading series first, then alphabetical.
-    out.sort((a, b) {
+Stream<List<({OfflineManga manga, int downloaded, int inFlight, int bytes})>>
+    offlineSeries(Ref ref) {
+  if (!ref.watch(offlineEnabledProvider)) return Stream.value(const []);
+  return ref.watch(offlineDatabaseProvider).watchOfflineSeries().map((rows) {
+    final sorted = [...rows];
+    sorted.sort((a, b) {
       if ((a.inFlight > 0) != (b.inFlight > 0)) return a.inFlight > 0 ? -1 : 1;
-      return a.manga.title.toLowerCase().compareTo(b.manga.title.toLowerCase());
+      if (a.bytes != b.bytes) return b.bytes.compareTo(a.bytes);
+      return b.manga.keepRule.index.compareTo(a.manga.keepRule.index);
     });
-    yield out;
+    return sorted;
+  });
+}
+
+/// Stop auto-keeping [mangaId] offline but KEEP the chapters already fully
+/// downloaded on the device. Unfinished (queued / partially-downloaded)
+/// chapters are dropped — "keep what I already have", not "finish the rest".
+///
+/// Order is load-bearing (see the design's interleaving analysis):
+/// 1. Quiesce the series' pipeline (cancel its queued/downloading chapters) so
+///    the downloaded set can't grow underneath us.
+/// 2. Pin every still-downloaded chapter — pinned is immune to reconcile
+///    eviction. Done BEFORE clearing the rule, so any reconcile that interleaves
+///    while we pin still sees the rule active (and so evicts nothing).
+/// 3. Clear the rule (count is dormant while off; preserve it).
+/// 4. Reconcile — now eviction-safe: desired set = pinned = all downloaded.
+Future<void> detachKeepRule(WidgetRef ref, int mangaId) async {
+  if (!ref.read(offlineEnabledProvider)) return;
+  final db = ref.read(offlineDatabaseProvider);
+  for (final c in await db.chaptersForManga(mangaId)) {
+    if (c.deviceState == OfflineDeviceState.queued ||
+        c.deviceState == OfflineDeviceState.downloading) {
+      await deleteChapterFromDevice(ref, c.id);
+    }
   }
+  final cfg = await ref.read(offlineRepositoryProvider).keepConfigFor(mangaId);
+  // Pin the downloaded set and clear the rule ATOMICALLY: the cancel above is
+  // async on Android (the FGS worker may finish a chapter slightly later), so
+  // re-read the downloaded set HERE and pin it inside the same transaction that
+  // flips the rule off. That guarantees that the instant the rule is off, every
+  // chapter the catalog shows as downloaded is already pinned (immune to
+  // eviction) — so neither this call's reconcile nor a concurrent one can evict
+  // a downloaded chapter. A chapter still finishing after this was in-flight at
+  // detach time and is intentionally dropped.
+  await db.transaction(() async {
+    for (final c in await db.downloadedChaptersForManga(mangaId)) {
+      await db.setChapterPinned(c.id, true);
+    }
+    await db.setKeepRule(mangaId, OfflineKeepRule.off, cfg.count);
+  });
+  await reconcileMangaWidget(ref, mangaId);
+}
+
+/// Stop keeping [mangaId] offline AND delete every on-device chapter (the
+/// server copy is untouched). Mirrors the per-series "remove" action.
+Future<void> removeKeepRuleAndDelete(WidgetRef ref, int mangaId) async {
+  if (!ref.read(offlineEnabledProvider)) return;
+  final db = ref.read(offlineDatabaseProvider);
+  final cfg = await ref.read(offlineRepositoryProvider).keepConfigFor(mangaId);
+  await db.setKeepRule(mangaId, OfflineKeepRule.off, cfg.count);
+  for (final c in await db.chaptersForManga(mangaId)) {
+    if (c.deviceState != OfflineDeviceState.none) {
+      await deleteChapterFromDevice(ref, c.id);
+    }
+  }
+}
+
+/// Change the keep-rule for [mangaId] and reconcile (download/evict to match).
+Future<void> changeKeepRule(
+    WidgetRef ref, int mangaId, OfflineKeepRule rule, int count) async {
+  if (!ref.read(offlineEnabledProvider)) return;
+  await ref.read(offlineDatabaseProvider).setKeepRule(mangaId, rule, count);
+  await reconcileMangaWidget(ref, mangaId);
 }
 
 /// Total bytes of on-device offline content — for the storage settings UI.
