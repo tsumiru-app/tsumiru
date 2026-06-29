@@ -581,25 +581,31 @@ class _ServerStep extends HookConsumerWidget {
         // Auth sub-form, revealed only when the server needs a login.
         if (state.value == _TestState.needsLogin) ...[
           const SizedBox(height: 12),
-          DropdownButtonFormField<AuthType>(
-            initialValue: authChoice.value,
-            decoration: InputDecoration(
-              labelText: context.l10n.onboardingAuthMode,
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.shield_rounded),
-            ),
-            items: [
-              DropdownMenuItem(
+          // M3 DropdownMenu (not the legacy DropdownButtonFormField, whose menu
+          // anchors the selected item over the field and can open upward over
+          // other content, wider than the field). This opens below, sized to
+          // the field. Keyed by the selection so it re-seeds if changed.
+          DropdownMenu<AuthType>(
+            key: ValueKey(authChoice.value),
+            initialSelection: authChoice.value,
+            expandedInsets: EdgeInsets.zero,
+            requestFocusOnTap: false,
+            label: Text(context.l10n.onboardingAuthMode),
+            leadingIcon: const Icon(Icons.shield_rounded),
+            inputDecorationTheme:
+                const InputDecorationTheme(border: OutlineInputBorder()),
+            dropdownMenuEntries: [
+              DropdownMenuEntry(
                   value: AuthType.basic,
-                  child: Text(context.l10n.onboardingAuthModeBasic)),
-              DropdownMenuItem(
+                  label: context.l10n.onboardingAuthModeBasic),
+              DropdownMenuEntry(
                   value: AuthType.simpleLogin,
-                  child: Text(context.l10n.onboardingAuthModeSimple)),
-              DropdownMenuItem(
+                  label: context.l10n.onboardingAuthModeSimple),
+              DropdownMenuEntry(
                   value: AuthType.uiLogin,
-                  child: Text(context.l10n.onboardingAuthModeUi)),
+                  label: context.l10n.onboardingAuthModeUi),
             ],
-            onChanged: (m) {
+            onSelected: (m) {
               if (m != null) {
                 authChoice.value = m;
                 credsRejected.value = false;

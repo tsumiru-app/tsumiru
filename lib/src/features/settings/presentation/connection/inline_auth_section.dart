@@ -185,20 +185,24 @@ class InlineAuthSection extends HookConsumerWidget {
       children: [
         SectionTitle(title: context.l10n.authentication),
         pad(
-          DropdownButtonFormField<AuthType>(
-            initialValue: authType,
-            decoration: InputDecoration(
-              labelText: context.l10n.authType,
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.security_rounded),
-            ),
-            items: AuthType.values
-                .map((t) => DropdownMenuItem(
-                      value: t,
-                      child: Text(t.toLocale(context)),
-                    ))
+          // M3 DropdownMenu (not the legacy DropdownButtonFormField, whose menu
+          // anchors the selected item over the field and can open upward, wider
+          // than the field). Opens below, sized to the field. Keyed by authType
+          // so it re-seeds when the auth mode is changed elsewhere (e.g. logout).
+          DropdownMenu<AuthType>(
+            key: ValueKey(authType),
+            initialSelection: authType,
+            expandedInsets: EdgeInsets.zero,
+            requestFocusOnTap: false,
+            label: Text(context.l10n.authType),
+            leadingIcon: const Icon(Icons.security_rounded),
+            inputDecorationTheme:
+                const InputDecorationTheme(border: OutlineInputBorder()),
+            dropdownMenuEntries: AuthType.values
+                .map((t) =>
+                    DropdownMenuEntry(value: t, label: t.toLocale(context)))
                 .toList(),
-            onChanged: onAuthModeChanged,
+            onSelected: onAuthModeChanged,
           ),
         ),
         if (authType != AuthType.none) ...[
