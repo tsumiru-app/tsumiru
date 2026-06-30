@@ -169,17 +169,21 @@ class UpdatesScreen extends HookConsumerWidget {
                 updatePair: () async {
                   final chapter = await ref
                       .refresh(chapterProvider(chapterId: item.id).future);
-                  try {
-                    controller.itemList = [...?controller.itemList]
-                      ..replaceRange(index, index + 1, [
-                        item.copyWith(
-                          isDownloaded: chapter?.isDownloaded,
-                          lastPageRead: chapter?.lastPageRead,
-                        ),
-                      ]);
-                  } catch (e) {
-                    //
-                  }
+                  // Locate the row by id, not the captured build-time index —
+                  // the list may have changed (paging/refresh) while the reader
+                  // was open, so an index-based patch could hit the wrong row.
+                  final list = [...?controller.itemList];
+                  final i = list.indexWhere((e) => e.id == item.id);
+                  if (i < 0) return;
+                  list[i] = list[i].copyWith(
+                    // Upgrade-only: reading never un-reads, so a stale/slow
+                    // refetch that still reports unread must not flip an
+                    // already-read row back. Only ever grey it out.
+                    isRead: (chapter?.isRead ?? false) || list[i].isRead,
+                    isDownloaded: chapter?.isDownloaded,
+                    lastPageRead: chapter?.lastPageRead,
+                  );
+                  controller.itemList = list;
                 },
                 isSelected: selectedChapters.value.containsKey(item.id),
                 canTapSelect: selectedChapters.value.isNotEmpty,

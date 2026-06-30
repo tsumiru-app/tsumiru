@@ -41,15 +41,20 @@ class ChapterMangaListTile extends StatelessWidget {
           ? (context.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300)
           : Colors.transparent,
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           if (canTapSelect) {
             toggleSelect(chapterWithMangaDto);
           } else {
-            ReaderRoute(
+            await ReaderRoute(
               mangaId: manga.id,
               chapterId: chapterWithMangaDto.id,
               showReaderLayoutAnimation: true,
             ).push(context);
+            // Refresh this row on return so a chapter read in the reader greys
+            // out here (its read state, download, and progress are re-fetched).
+            // Guard mounted: the user may have left Updates while reading.
+            if (!context.mounted) return;
+            await updatePair();
           }
         },
         onLongPress: () => toggleSelect(chapterWithMangaDto),
@@ -97,7 +102,8 @@ class ChapterMangaListTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: color ?? context.theme.colorScheme.onSurfaceVariant,
+                        color:
+                            color ?? context.theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],

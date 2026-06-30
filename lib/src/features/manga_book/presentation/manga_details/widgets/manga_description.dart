@@ -25,6 +25,7 @@ import '../../../../offline/presentation/series_offline_button.dart';
 import '../../../../tracking/presentation/hub/track_sheet.dart';
 import '../../../domain/manga/manga_model.dart';
 import '../controller/next_update_controller.dart';
+import '../server_web_url.dart';
 import 'manga_action_button.dart';
 
 class MangaDescription extends HookConsumerWidget {
@@ -39,6 +40,46 @@ class MangaDescription extends HookConsumerWidget {
   final AsyncCallback refresh;
   final AsyncCallback removeMangaFromLibrary;
   final AsyncCallback addMangaToLibrary;
+
+  /// "Web View" → choose the source site (realUrl) or the Suwayomi server's
+  /// WebUI page for this manga. With no source page, opens the server directly.
+  void _openInBrowser(BuildContext context, WidgetRef ref) {
+    final toast = ref.read(toastProvider);
+    final serverUrl = serverMangaWebUrl(ref, manga.id);
+    if (manga.realUrl.isBlank) {
+      if (serverUrl != null) launchUrlInWeb(context, serverUrl, toast);
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.public_rounded),
+              title: Text(sheetContext.l10n.openSourceInBrowser),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                launchUrlInWeb(context, manga.realUrl ?? '', toast);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.dns_rounded),
+              title: Text(sheetContext.l10n.openOnServer),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                if (serverUrl != null) {
+                  launchUrlInWeb(context, serverUrl, toast);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isExpanded = useState(context.isTablet);
@@ -46,8 +87,7 @@ class MangaDescription extends HookConsumerWidget {
     final surface = context.theme.scaffoldBackgroundColor;
     final inLibrary = manga.inLibrary.ifNull();
 
-    final prediction =
-        ref.watch(mangaNextUpdateProvider(mangaId: manga.id));
+    final prediction = ref.watch(mangaNextUpdateProvider(mangaId: manga.id));
     final soonDays = manga.status == Enum$MangaStatus.COMPLETED
         ? null
         : prediction?.daysUntil(DateTime.now());
@@ -63,8 +103,7 @@ class MangaDescription extends HookConsumerWidget {
                 content: Text(
                   context.l10n.smartUpdateExpected(
                     context.l10n.dayCount(soonDays),
-                    context.l10n
-                        .dayCount(prediction?.intervalDays ?? 7),
+                    context.l10n.dayCount(prediction?.intervalDays ?? 7),
                   ),
                 ),
                 actions: [
@@ -200,23 +239,19 @@ class MangaDescription extends HookConsumerWidget {
                     active: manga.trackRecords.totalCount > 0,
                     icon: const Icon(Icons.sync_rounded),
                     label: context.l10n.tracking,
-                    onPressed: () => showTrackSheet(context, manga.id, mangaTitle: manga.title),
+                    onPressed: () => showTrackSheet(context, manga.id,
+                        mangaTitle: manga.title),
                   ),
                 ),
                 if (offlineEnabled)
                   Expanded(child: SeriesOfflineButton(mangaId: manga.id)),
-                if (manga.realUrl.isNotBlank)
-                  Expanded(
-                    child: MangaActionButton(
-                      icon: const Icon(Icons.public_rounded),
-                      label: context.l10n.webView,
-                      onPressed: () => launchUrlInWeb(
-                        context,
-                        (manga.realUrl ?? ""),
-                        ref.read(toastProvider),
-                      ),
-                    ),
+                Expanded(
+                  child: MangaActionButton(
+                    icon: const Icon(Icons.public_rounded),
+                    label: context.l10n.webView,
+                    onPressed: () => _openInBrowser(context, ref),
                   ),
+                ),
               ],
             ),
           );
